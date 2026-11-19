@@ -45,6 +45,14 @@
     button:active { transform: scale(0.94); }
     button:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; transform: none; }
 
+    .btn-back {
+      background: #475569;
+      color: #f8fafc;
+    }
+    .btn-back:hover {
+      background: #334155;
+    }
+
     .btn-reset-danger {
       background: #dc2626;
       color: #ffffff;
@@ -59,7 +67,7 @@
     .kelas-btn:hover { background: #0f766e; }
 
     /* Catatan */
-    .catatan-box { background: #0f172a; padding: 18px; border-radius: 10px; text-align: left; max-height: 260px; overflow-y: auto; margin-bottom: 18px; line-height: 1.6; border-left: 5px solid #38bdf8; }
+    .catatan-box { background: #0f172a; padding: 18px; border-radius: 10px; text-align: left; max-height: 260px; overflow-y: auto; margin-bottom: 18px; line-height: 1.55; border-left: 5px solid #38bdf8; white-space: pre-line; font-size: 14px; }
 
     /* Acak Siswa */
     .player-select-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
@@ -78,9 +86,14 @@
       border-bottom: 1px solid #1e293b;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 0 120px 0 14px;
+      gap: 10px;
+      padding: 0 110px 0 12px;
       flex-shrink: 0;
+    }
+    #btn-game-back {
+      padding: 5px 12px;
+      font-size: 12px;
+      border-radius: 8px;
     }
     .info-pill {
       background: #1e293b;
@@ -321,7 +334,7 @@
   <!-- Audio Backsound -->
   <audio id="bg-music" src="sound.mp3" loop preload="auto"></audio>
 
-  <!-- 1. HALAMAN LOGIN GURU -->
+  <!-- 1. HALAMAN LOGIN GURU (TANPA TOMBOL KEMBALI) -->
   <div id="screen-login" class="screen active">
     <div class="card">
       <h1>Login Guru</h1>
@@ -332,12 +345,13 @@
     </div>
   </div>
 
-  <!-- 2. HALAMAN PILIH KELAS (SETELAH LOGIN + TOMBOL RESET DATA HASIL) -->
+  <!-- 2. HALAMAN PILIH KELAS -->
   <div id="screen-kelas" class="screen">
     <div class="card">
       <h2>Pilih Kelas</h2>
       <div id="kelas-list" class="kelas-grid"></div>
       <div class="action-row" style="margin-top: 18px; border-top: 1px solid #334155; padding-top: 14px;">
+        <button class="btn-back" onclick="goBackFrom('screen-kelas')">Kembali</button>
         <button class="btn-reset-danger" onclick="resetHasilDatabase('kelas-reset-msg')">Reset Data Hasil (Nama, Nilai, Timer)</button>
       </div>
       <p id="kelas-reset-msg" style="font-size: 13px; color: #38bdf8; margin-top: 8px;"></p>
@@ -349,7 +363,10 @@
     <div class="card">
       <h2>Catatan Pembelajaran</h2>
       <div id="catatan-content" class="catatan-box"></div>
-      <button onclick="goToAcak()">Lanjut Acak Pemain</button>
+      <div class="action-row">
+        <button class="btn-back" onclick="goBackFrom('screen-catatan')">Kembali</button>
+        <button onclick="goToAcak()">Lanjut Acak Pemain</button>
+      </div>
     </div>
   </div>
 
@@ -360,9 +377,9 @@
       <p id="acak-info-sisa" style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;"></p>
       <div id="selected-players" class="player-select-list"></div>
       <div class="action-row">
+        <button class="btn-back" onclick="goBackFrom('screen-acak')">Kembali</button>
         <button style="background: #64748b;" onclick="acakUlangSemua()">Acak Ulang Semua</button>
         <button style="background: #16a34a;" onclick="startGame()">MULAI GAME</button>
-        <button style="background: #0d9488;" onclick="showScreen('screen-kelas')">Ganti Kelas</button>
       </div>
     </div>
   </div>
@@ -370,6 +387,7 @@
   <!-- 5. HALAMAN GAME -->
   <div id="screen-game" class="screen">
     <div id="top-info-bar">
+      <button id="btn-game-back" class="btn-back" onclick="goBackFrom('screen-game')">Kembali</button>
       <div class="info-pill" id="hud-kelas">Kelas: -</div>
       <div class="info-pill" id="hud-sesi">Sesi: 1</div>
       <div class="info-pill" id="hud-timer">Sisa Waktu: 06:00</div>
@@ -403,6 +421,7 @@
       </table>
       <p id="save-status" style="font-size: 12px; color: #38bdf8; margin-bottom: 10px;">Menyimpan hasil sesi...</p>
       <div class="action-row">
+        <button class="btn-back" onclick="goBackFrom('screen-sesi-hasil')">Kembali</button>
         <button style="background: #16a34a;" onclick="nextSessionSameClass()">Sesi Berikutnya (Kelas Ini)</button>
         <button style="background: #d97706;" onclick="showTopClassScreen()">Selesai & Lihat Top Kelas</button>
       </div>
@@ -428,10 +447,9 @@
       </table>
       <p id="top-reset-msg" style="font-size: 13px; color: #38bdf8; margin-top: 6px;"></p>
       <div class="action-row">
+        <button class="btn-back" onclick="goBackFrom('screen-top-kelas')">Kembali</button>
         <button style="background: #16a34a;" onclick="exportTopClassJPG()">Cetak JPG (Nama - Nilai - Timer)</button>
         <button class="btn-reset-danger" onclick="resetHasilDatabase('top-reset-msg')">Reset Data Hasil</button>
-        <button style="background: #0d9488;" onclick="showScreen('screen-kelas')">Pilih Kelas Lain</button>
-        <button onclick="location.reload()">Kembali ke Login Guru</button>
       </div>
     </div>
   </div>
@@ -452,7 +470,6 @@
       return rIdx * COLS + posInRow + 1;
     }
 
-    // Tangga tegak lurus
     const LADDERS = [
       { fromRow: 1, fromCol: 9, toRow: 2, toCol: 9, from: barisanKolomToTile(1, 9), to: barisanKolomToTile(2, 9) },
       { fromRow: 2, fromCol: 4, toRow: 3, toCol: 4, from: barisanKolomToTile(2, 4), to: barisanKolomToTile(3, 4) },
@@ -460,10 +477,6 @@
       { fromRow: 4, fromCol: 2, toRow: 5, toCol: 2, from: barisanKolomToTile(4, 2), to: barisanKolomToTile(5, 2) }
     ];
 
-    // Ular 2D (kepala tetap di atas, ekor sesuai posisi terbaru):
-    // - Ular hijau: kepala barisan 3 kolom 9, ekor barisan 1 kolom 6
-    // - Ular orange: kepala barisan 4 kolom 4, ekor dipindah ke barisan 2 kolom 2
-    // - Ular ungu: kepala barisan 5 kolom 10, ekor dipindah ke barisan 2 kolom 11
     const SNAKES = [
       { headRow: 3, headCol: 9,  tailRow: 1, tailCol: 6,  head: barisanKolomToTile(3, 9),  tail: barisanKolomToTile(1, 6),  style: 'green-cartoon' },
       { headRow: 4, headCol: 4,  tailRow: 2, tailCol: 2,  head: barisanKolomToTile(4, 4),  tail: barisanKolomToTile(2, 2),  style: 'orange-cartoon' },
@@ -478,7 +491,7 @@
     ];
 
     let dbData = { kelas: {}, catatan: [], soal: [], hasilNames: [] };
-    let playedStudentSet = new Set(); // Menyimpan nama siswa yang sudah ada di sheet Hasil
+    let playedStudentSet = new Set();
     let currentKelas = '';
     let sessionNumber = 1;
     let availableStudents = [];
@@ -516,6 +529,34 @@
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
+    }
+
+    // Navigasi tombol Kembali ke halaman sebelumnya
+    function goBackFrom(currentScreenId) {
+      if (currentScreenId === 'screen-game') {
+        clearInterval(timerInterval);
+        document.getElementById('bg-music').pause();
+        gameEnded = true;
+        showScreen('screen-acak');
+        return;
+      }
+
+      const prevMap = {
+        'screen-kelas': 'screen-login',
+        'screen-catatan': 'screen-kelas',
+        'screen-acak': 'screen-catatan',
+        'screen-sesi-hasil': 'screen-acak',
+        'screen-top-kelas': 'screen-sesi-hasil'
+      };
+
+      const target = prevMap[currentScreenId];
+      if (target) {
+        if (target === 'screen-login') {
+          document.getElementById('btn-login').disabled = false;
+          document.getElementById('login-msg').innerText = '';
+        }
+        showScreen(target);
+      }
     }
 
     function toggleFullScreen() {
@@ -675,7 +716,6 @@
 
     function acakUlangSemua() {
       const allInClass = [...(dbData.kelas[currentKelas] || [])];
-      // Saring: siswa yang sudah ada di sheet Hasil tidak masuk ke list acak
       const eligiblePool = allInClass.filter(name => !playedStudentSet.has(normalizeNameKey(name)));
       eligiblePool.sort(() => Math.random() - 0.5);
 
@@ -1344,7 +1384,6 @@
 
       const sessionRows = activePlayers.map(p => {
         const secUsed = p.finishSec !== null ? p.finishSec : elapsedNow;
-        // Tandai siswa ini sudah bermain agar tidak muncul lagi di list acak berikutnya
         playedStudentSet.add(normalizeNameKey(p.name));
 
         return {
