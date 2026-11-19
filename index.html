@@ -6,7 +6,7 @@
   <title>Ular Tangga Pembelajaran - Login Guru</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; color: #f8fafc; }
 
     /* Tombol Full Layar / Normal Satu Posisi di Setiap Halaman */
@@ -15,7 +15,7 @@
       top: 10px;
       right: 12px;
       z-index: 9999;
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 0.92);
       color: #38bdf8;
       border: 1px solid #38bdf8;
       padding: 6px 13px;
@@ -24,8 +24,10 @@
       font-weight: 800;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: transform 0.08s ease, background-color 0.12s ease;
     }
-    #btn-fullscreen-toggle:hover {
+    #btn-fullscreen-toggle:active {
+      transform: scale(0.92);
       background: #0284c7;
       color: #ffffff;
     }
@@ -37,11 +39,11 @@
     /* Card UI */
     .card { background: #1e293b; padding: 26px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.45); width: 100%; max-width: 660px; text-align: center; border: 1px solid #334155; max-height: 88vh; overflow-y: auto; }
     h1, h2 { margin-bottom: 16px; color: #38bdf8; }
-    h3 { margin: 14px 0 8px; color: #facc15; font-size: 16px; }
     input { width: 100%; padding: 12px; margin-bottom: 14px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 16px; }
-    button { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.15s; }
+    button { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: transform 0.08s ease, background-color 0.12s ease; }
     button:hover { background: #0369a1; }
-    button:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; }
+    button:active { transform: scale(0.94); }
+    button:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; transform: none; }
 
     /* Grid Kelas */
     .kelas-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 12px; }
@@ -184,6 +186,7 @@
       color: #94a3b8;
       border: 2px solid #475569;
       touch-action: manipulation;
+      transition: transform 0.06s ease, box-shadow 0.1s ease, background-color 0.1s ease;
     }
 
     .dice-btn.lit {
@@ -192,6 +195,12 @@
       border-color: #fef08a;
       box-shadow: 0 0 14px rgba(250, 204, 21, 0.85);
       animation: pulseDice 1s infinite alternate;
+    }
+
+    .dice-btn.pressed,
+    .dice-btn:active {
+      transform: scale(0.84) rotate(-6deg);
+      filter: brightness(1.25);
     }
 
     @keyframes pulseDice {
@@ -236,11 +245,14 @@
       font-weight: bold;
       text-align: center;
       touch-action: manipulation;
+      transition: transform 0.06s ease, background-color 0.08s ease, border-color 0.08s ease;
     }
 
+    .opt-btn.pressed,
     .opt-btn:active {
-      transform: scale(0.95);
+      transform: scale(0.9);
       background: #0284c7;
+      border-color: #7dd3fc;
     }
 
     .p-toast {
@@ -383,24 +395,25 @@
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxn2cHrynm_OZDfUttcEx6OFrzn-BWmzNLEVyfVAP2eEjGINc93Fy28MG6GrPm7qTPqJA/exec';
 
     const SESSION_SECONDS = 6 * 60; // 6 menit
-    const COLS = 10;
+    const COLS = 11; // 11 kotak catur ke samping
     const ROWS = 5;
-    const TOTAL_TILES = COLS * ROWS; // 50 petak
+    const TOTAL_TILES = COLS * ROWS; // 55 petak
 
-    // Tangga (naik dari bawah ke atas) & Ular (kepala di atas, ekor di bawah)
+    // Tangga pendek: cukup naik 1 baris kotak saja (+11 petak) & posisi kolom terpisah agar tidak saling bentrok
     const LADDERS = [
-      { from: 2,  to: 14 },
-      { from: 6,  to: 18 },
-      { from: 13, to: 26 },
-      { from: 22, to: 35 },
-      { from: 29, to: 42 }
+      { from: 2,  to: 15 },
+      { from: 5,  to: 18 },
+      { from: 9,  to: 20 },
+      { from: 24, to: 37 },
+      { from: 28, to: 41 },
+      { from: 32, to: 43 }
     ];
 
-    // head = petak atas (kepala ular), tail = petak bawah (ekor ular)
+    // Ular berbeda-beda: kepala di atas (baris lebih tinggi), ekor di bawah
     const SNAKES = [
-      { head: 39, tail: 25, style: 'green-spots' },
-      { head: 44, tail: 31, style: 'orange-stripe' },
-      { head: 48, tail: 36, style: 'purple-band' }
+      { head: 46, tail: 34, style: 'green-spots' },
+      { head: 50, tail: 39, style: 'orange-stripe' },
+      { head: 53, tail: 30, style: 'purple-band' }
     ];
 
     const PLAYER_COLORS = [
@@ -415,7 +428,7 @@
     let sessionNumber = 1;
     let availableStudents = [];
     let activePlayers = [];
-    let allSessionRecords = []; // Menyimpan seluruh hasil dari tiap sesi
+    let allSessionRecords = [];
     let remainingSeconds = SESSION_SECONDS;
     let timerInterval = null;
     let gameEnded = false;
@@ -425,7 +438,6 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // Tombol Full Layar / Normal
     function toggleFullScreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -440,6 +452,15 @@
     }
 
     document.addEventListener('fullscreenchange', syncFullscreenButtonText);
+
+    function triggerInstantPressAnim(btnEl) {
+      btnEl.classList.remove('pressed');
+      void btnEl.offsetWidth;
+      btnEl.classList.add('pressed');
+      setTimeout(() => {
+        btnEl.classList.remove('pressed');
+      }, 120);
+    }
 
     // 1. LOGIN GURU
     async function handleLogin() {
@@ -580,7 +601,7 @@
     }
 
     // ==========================================
-    // 4. PAPAN 2D + ULAR BERBEDA + PION CATUR 3D
+    // 4. PAPAN 11 KOTAK + ULAR BERBEDA + PION CATUR 3D
     // ==========================================
     let canvas, ctx;
     let scene3D, camera3D, renderer3D, pawnMeshes3D = [];
@@ -594,14 +615,13 @@
       return { col, row };
     }
 
-    // Koordinat ternormalisasi x: [-1..1], y: [-1..1] untuk sinkronisasi 2D & 3D
     function getTileNormalized(num, playerIdx = null) {
       const { col, row } = getTileGrid(num);
       let nx = ((col + 0.5) / COLS) * 2 - 1;
       let ny = ((row + 0.5) / ROWS) * 2 - 1;
 
       if (playerIdx !== null) {
-        const ox = 0.045;
+        const ox = 0.04;
         const oy = 0.065;
         const offsets = [
           { dx: -ox, dy: -oy },
@@ -617,7 +637,7 @@
 
     function setupBoardAnd3DPawns() {
       const frame = document.getElementById('board-frame');
-      const w = frame.clientWidth || 800;
+      const w = frame.clientWidth || 880;
       const h = frame.clientHeight || 300;
 
       canvas = document.getElementById('board-canvas');
@@ -625,7 +645,6 @@
       canvas.width = w;
       canvas.height = h;
 
-      // Setup Three.js Pion Catur 3D
       const pawnCanvas = document.getElementById('pawn-3d-canvas');
       pawnCanvas.width = w;
       pawnCanvas.height = h;
@@ -666,7 +685,6 @@
       });
     }
 
-    // Membangun bentuk pion catur 3D (alas, badan melengkung, cincin, kepala bulat)
     function createChessPawnMesh(colorHex) {
       const group = new THREE.Group();
       const mat = new THREE.MeshPhongMaterial({
@@ -676,25 +694,21 @@
       });
       const outlineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-      // Alas pion
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.08, 0.03, 20), mat);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.078, 0.03, 20), mat);
       base.rotation.x = Math.PI / 2;
       base.position.z = 0.015;
       group.add(base);
 
-      // Badan pion (lathe/kerucut bertingkat)
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.062, 0.11, 20), mat);
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.058, 0.11, 20), mat);
       body.rotation.x = Math.PI / 2;
       body.position.z = 0.08;
       group.add(body);
 
-      // Kerah leher pion
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.01, 10, 20), outlineMat);
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.01, 10, 20), outlineMat);
       collar.position.z = 0.135;
       group.add(collar);
 
-      // Kepala bulat pion catur
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.052, 20, 20), mat);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.05, 20, 20), mat);
       head.position.z = 0.18;
       group.add(head);
 
@@ -710,7 +724,7 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      // Kotak hitam putih penuh
+      // 11 kotak ke samping x 5 baris hitam putih selang-seling
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const isWhite = (r + c) % 2 === 0;
@@ -719,7 +733,7 @@
         }
       }
 
-      // Label START & FINISH di dalam kotak pojok
+      // Label START di petak 1 (kiri bawah) & FINISH di petak 55 (kanan atas)
       const startGrid = getTileGrid(1);
       ctx.font = `900 ${Math.max(11, Math.floor(cellH * 0.22))}px "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
@@ -730,7 +744,7 @@
       const finishGrid = getTileGrid(TOTAL_TILES);
       ctx.fillText('FINISH', (finishGrid.col + 0.5) * cellW, (finishGrid.row + 0.5) * cellH);
 
-      // Tangga merah
+      // Tangga pendek (1 baris) tanpa bentrok
       LADDERS.forEach(lad => {
         const g1 = getTileGrid(lad.from);
         const g2 = getTileGrid(lad.to);
@@ -740,7 +754,7 @@
         );
       });
 
-      // Ular dengan motif berbeda-beda & kepala di bagian atas
+      // Ular berbeda-beda dengan kepala dari atas
       SNAKES.forEach(snk => {
         const gHead = getTileGrid(snk.head);
         const gTail = getTileGrid(snk.tail);
@@ -773,7 +787,7 @@
 
       const nx = -dy / len;
       const ny = dx / len;
-      const halfWidth = 9;
+      const halfWidth = 8.5;
 
       ctx.save();
       ctx.strokeStyle = '#ef4444';
@@ -787,7 +801,7 @@
       ctx.lineTo(x2 - nx * halfWidth, y2 - ny * halfWidth);
       ctx.stroke();
 
-      const steps = Math.max(3, Math.floor(len / 20));
+      const steps = Math.max(3, Math.floor(len / 18));
       ctx.lineWidth = 2.5;
       for (let i = 1; i < steps; i++) {
         const t = i / steps;
@@ -802,7 +816,6 @@
     }
 
     function drawDistinctSnakeTopHead(headX, headY, tailX, tailY, style) {
-      // Kepala selalu berada di bagian atas (y lebih kecil)
       const topX = headY <= tailY ? headX : tailX;
       const topY = headY <= tailY ? headY : tailY;
       const botX = headY <= tailY ? tailX : headX;
@@ -829,7 +842,6 @@
       ctx.save();
       ctx.lineCap = 'round';
 
-      // Badan utama ular
       ctx.strokeStyle = palette.body;
       ctx.lineWidth = 8;
       ctx.beginPath();
@@ -837,7 +849,6 @@
       ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, botX, botY);
       ctx.stroke();
 
-      // Motif berbeda sepanjang badan ular
       ctx.strokeStyle = palette.pattern;
       ctx.lineWidth = 4;
       ctx.setLineDash(style === 'orange-stripe' ? [4, 10] : [2, 12]);
@@ -847,7 +858,7 @@
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Kepala ular di bagian atas + mata + lidah
+      // Kepala ular di atas
       ctx.fillStyle = palette.head;
       ctx.beginPath();
       ctx.arc(topX, topY, 8.5, 0, Math.PI * 2);
@@ -869,7 +880,7 @@
       ctx.arc(topX + 3, topY - 2, 1.1, 0, Math.PI * 2);
       ctx.fill();
 
-      // Lidah merah kecil ke atas
+      // Lidah merah ke atas
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -964,6 +975,7 @@
         const diceBtn = document.getElementById(`dice-btn-${idx}`);
         diceBtn.addEventListener('pointerdown', (e) => {
           e.preventDefault();
+          triggerInstantPressAnim(diceBtn);
           handleRollDice(idx);
         });
 
@@ -1027,6 +1039,7 @@
 
         btn.addEventListener('pointerdown', (e) => {
           e.preventDefault();
+          triggerInstantPressAnim(btn);
           handleAnswer(pIdx, optKey);
         });
         optsContainer.appendChild(btn);
@@ -1068,10 +1081,11 @@
       document.getElementById(`dice-btn-${pIdx}`).innerText = String(diceValue);
       showToast(pIdx, `Dadu keluar: ${diceValue}!`, '#facc15');
 
+      // Lompat langkah demi langkah dengan durasi cukup agar animasi lompat terlihat jelas
       for (let s = 0; s < diceValue; s++) {
         if (player.pos >= TOTAL_TILES) break;
         const nextTile = player.pos + 1;
-        await animatePawnHop(pIdx, player.pos, nextTile, 180);
+        await animatePawnHop(pIdx, player.pos, nextTile, 340, 0.22);
         player.pos = nextTile;
       }
 
@@ -1080,11 +1094,11 @@
 
       if (ladderHit) {
         showToast(pIdx, `NAIK TANGGA ke petak ${ladderHit.to}!`, '#4ade80');
-        await animatePawnHop(pIdx, player.pos, ladderHit.to, 420);
+        await animatePawnHop(pIdx, player.pos, ladderHit.to, 620, 0.28);
         player.pos = ladderHit.to;
       } else if (snakeHit) {
         showToast(pIdx, `TURUN ULAR ke petak ${snakeHit.tail}!`, '#fb7185');
-        await animatePawnHop(pIdx, player.pos, snakeHit.tail, 420);
+        await animatePawnHop(pIdx, player.pos, snakeHit.tail, 620, 0.24);
         player.pos = snakeHit.tail;
       }
 
@@ -1106,7 +1120,7 @@
       }
     }
 
-    function animatePawnHop(pIdx, fromTile, toTile, duration) {
+    function animatePawnHop(pIdx, fromTile, toTile, duration, hopHeight = 0.22) {
       return new Promise((resolve) => {
         const p = activePlayers[pIdx];
         const c1 = getTileNormalized(fromTile, pIdx);
@@ -1115,9 +1129,12 @@
 
         function step(now) {
           const t = Math.min((now - startTime) / duration, 1);
-          p.normX = c1.nx + (c2.nx - c1.nx) * t;
-          p.normY = c1.ny + (c2.ny - c1.ny) * t;
-          p.jumpLift = Math.sin(t * Math.PI) * 0.14;
+          // Ease in-out agar lompatan mulus dan tidak kaku
+          const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+          p.normX = c1.nx + (c2.nx - c1.nx) * ease;
+          p.normY = c1.ny + (c2.ny - c1.ny) * ease;
+          p.jumpLift = Math.sin(t * Math.PI) * hopHeight;
 
           if (t < 1) {
             requestAnimationFrame(step);
@@ -1164,7 +1181,6 @@
         };
       });
 
-      // Urutkan top sesi: nilai tertinggi, lalu petak terjauh, lalu waktu paling sedikit
       const sortedSession = [...sessionRows].sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         if (b.pos !== a.pos) return b.pos - a.pos;
@@ -1213,7 +1229,6 @@
     }
 
     function showTopClassScreen() {
-      // Gabungkan berdasarkan siswa per kelas (akumulasi nilai, petak tertinggi, waktu paling sedikit)
       const mapStudent = new Map();
 
       allSessionRecords.forEach(rec => {
