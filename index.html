@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ular Tangga 3D Pembelajaran</title>
+  <title>Ular Tangga 3D SD Inpres Binanga 1</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
-    body, html { width: 100%; height: 100%; overflow: hidden; background: #1e293b; color: #f8fafc; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; color: #f8fafc; }
 
     /* Layar Halaman */
     .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: absolute; top: 0; left: 0; }
     .screen.active { display: flex; }
 
     /* Card UI */
-    .card { background: #334155; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); width: 100%; max-width: 500px; text-align: center; }
+    .card { background: #1e293b; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.45); width: 100%; max-width: 500px; text-align: center; border: 1px solid #334155; }
     h1, h2 { margin-bottom: 20px; color: #38bdf8; }
-    input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #475569; background: #1e293b; color: white; font-size: 16px; }
+    input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 16px; }
     button { background: #0284c7; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     button:hover { background: #0369a1; }
     button:disabled { background: #64748b; cursor: not-allowed; }
@@ -27,34 +27,34 @@
     .kelas-btn:hover { background: #0f766e; }
 
     /* Catatan */
-    .catatan-box { background: #1e293b; padding: 20px; border-radius: 10px; text-align: left; max-height: 300px; overflow-y: auto; margin-bottom: 20px; line-height: 1.6; border-left: 5px solid #38bdf8; }
+    .catatan-box { background: #0f172a; padding: 20px; border-radius: 10px; text-align: left; max-height: 300px; overflow-y: auto; margin-bottom: 20px; line-height: 1.6; border-left: 5px solid #38bdf8; }
 
     /* Acak Siswa */
     .player-select-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-    .player-item { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 12px 16px; border-radius: 8px; border-left: 6px solid #fff; }
+    .player-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 12px 16px; border-radius: 8px; border-left: 6px solid #fff; }
     .btn-skip { background: #e11d48; padding: 6px 12px; font-size: 14px; }
     .btn-skip:hover { background: #be123c; }
 
-    /* Layar Game Split */
+    /* Layar Game Split Landscape */
     #screen-game { padding: 0; justify-content: flex-start; }
-    #canvas-container { width: 100%; height: 52%; position: relative; background: #0f172a; }
-    #hud-top { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
-    .hud-badge { background: rgba(15, 23, 42, 0.8); padding: 6px 14px; border-radius: 20px; font-weight: bold; border: 1px solid #38bdf8; }
+    #canvas-container { width: 100%; height: 55%; position: relative; background: linear-gradient(180deg, #38bdf8 0%, #bae6fd 55%, #4ade80 100%); overflow: hidden; }
+    #hud-top { position: absolute; top: 8px; left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+    .hud-badge { background: rgba(15, 23, 42, 0.85); color: #f8fafc; padding: 5px 14px; border-radius: 20px; font-weight: bold; font-size: 13px; border: 1px solid #38bdf8; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 
     /* 4 Panel Siswa Bawah */
-    #players-panel { width: 100%; height: 48%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px; background: #0f172a; touch-action: none; }
+    #players-panel { width: 100%; height: 45%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px; background: #0f172a; touch-action: none; }
     .p-card { background: #1e293b; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; border-top: 5px solid #fff; position: relative; overflow: hidden; }
     .p-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; border-bottom: 1px solid #334155; padding-bottom: 4px; }
     .p-soal { font-size: 13px; font-weight: 600; flex-grow: 1; display: flex; align-items: center; justify-content: center; text-align: center; overflow-y: auto; padding: 4px; }
     .p-options { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
     .opt-btn { background: #334155; color: white; border: 1px solid #475569; padding: 8px 4px; border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; touch-action: manipulation; }
     .opt-btn:active { transform: scale(0.95); background: #0284c7; }
-    .p-status-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.88); display: none; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; text-align: center; padding: 10px; z-index: 5; }
+    .p-status-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.9); display: none; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; text-align: center; padding: 8px; z-index: 5; }
 
     /* Hasil Akhir */
     table { width: 100%; border-collapse: collapse; margin: 15px 0; }
     th, td { padding: 10px; border-bottom: 1px solid #475569; text-align: center; }
-    th { background: #1e293b; color: #38bdf8; }
+    th { background: #0f172a; color: #38bdf8; }
   </style>
 </head>
 <body>
@@ -151,8 +151,37 @@
       { hex: '#eab308', three: 0xeab308, name: 'Kuning' }
     ];
 
-    const LADDERS = { 4: 25, 13: 46, 33: 49, 42: 63, 50: 69, 62: 81, 74: 92 };
-    const SNAKES  = { 27: 5, 40: 3, 43: 18, 54: 31, 66: 45, 76: 58, 89: 53, 99: 41 };
+    // Papan Landscape 14 kolom x 7 baris = 98 petak (Petak 1 = kanan bawah START, Petak 98 = kiri atas FINISH)
+    const COLS = 14;
+    const ROWS = 7;
+    const TOTAL_TILES = COLS * ROWS; // 98
+
+    // Banyak Tangga (Naik) & Banyak Ular (Turun) sesuai nuansa papan ramai
+    const LADDERS = {
+      3: 18,
+      9: 24,
+      15: 32,
+      21: 38,
+      29: 46,
+      36: 53,
+      44: 61,
+      51: 68,
+      59: 76,
+      67: 84,
+      73: 89
+    };
+
+    const SNAKES = {
+      22: 6,
+      34: 17,
+      48: 27,
+      56: 39,
+      64: 45,
+      78: 58,
+      86: 65,
+      93: 72,
+      97: 79
+    };
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -292,56 +321,116 @@
     }
 
     // ==========================================
-    // 4. ENGINE 3D THREE.JS
+    // 4. ENGINE 3D THREE.JS (LANDSCAPE BOARD)
     // ==========================================
     let scene, camera, renderer;
+
+    function makeTextSprite(text, bgColor = '#f59e0b', textColor = '#fef08a', fontSize = 44, width = 560, height = 110) {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = bgColor;
+      ctx.beginPath();
+      ctx.roundRect(8, 8, width - 16, height - 16, 22);
+      ctx.fill();
+
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = '#78350f';
+      ctx.stroke();
+
+      ctx.font = `bold ${fontSize}px "Segoe UI", Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = '#7c2d12';
+      ctx.strokeText(text, width / 2, height / 2 + 2);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, width / 2, height / 2 + 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+      const geo = new THREE.PlaneGeometry(width / 85, height / 85);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2.4;
+      return mesh;
+    }
 
     function init3D() {
       const container = document.getElementById('canvas-container');
       container.querySelectorAll('canvas').forEach(c => c.remove());
 
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0f172a);
 
-      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-      camera.position.set(0, 12.5, 11.5);
-      camera.lookAt(0, 0, 0.5);
+      // Kamera sudut landscape lebar agar papan 14x7 memenuhi layar atas
+      camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(0, 12.2, 8.2);
+      camera.lookAt(0, 0, 0.2);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(container.clientWidth, container.clientHeight);
       container.appendChild(renderer.domElement);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
       scene.add(ambientLight);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      dirLight.position.set(8, 15, 10);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
+      dirLight.position.set(5, 16, 8);
       scene.add(dirLight);
 
-      const tileGeo = new THREE.BoxGeometry(0.96, 0.2, 0.96);
-      for (let num = 1; num <= 100; num++) {
+      // Bingkai papan kayu besar
+      const boardFrameGeo = new THREE.BoxGeometry(COLS + 0.6, 0.25, ROWS + 0.6);
+      const boardFrameMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+      const boardFrame = new THREE.Mesh(boardFrameGeo, boardFrameMat);
+      boardFrame.position.set(0, -0.14, 0);
+      scene.add(boardFrame);
+
+      // Kotak-kotak papan 14x7 (putih & gelap selang-seling seperti gambar referensi)
+      const tileGeo = new THREE.BoxGeometry(0.98, 0.12, 0.98);
+      for (let num = 1; num <= TOTAL_TILES; num++) {
         const coords = getTileCoordinates(num);
-        const isEven = num % 2 === 0;
-        const mat = new THREE.MeshLambertMaterial({ color: isEven ? 0xe2e8f0 : 0x38bdf8 });
+        const isLight = num % 2 === 0;
+        const mat = new THREE.MeshLambertMaterial({ color: isLight ? 0xf8fafc : 0x1e293b });
         const tile = new THREE.Mesh(tileGeo, mat);
         tile.position.set(coords.x, 0, coords.z);
         scene.add(tile);
       }
 
+      // Papan Judul SD Inpres Binanga 1 di bagian atas
+      const titleBanner = makeTextSprite('SD INPRES BINANGA 1', '#d97706', '#fde047', 40, 620, 105);
+      titleBanner.position.set(0, 0.65, -(ROWS / 2) - 0.55);
+      scene.add(titleBanner);
+
+      // Badge START di Petak 1 (kanan bawah) & FINISH di Petak 98 (kiri atas)
+      const startCoords = getTileCoordinates(1);
+      const startBadge = makeTextSprite('START', '#16a34a', '#ffffff', 34, 240, 85);
+      startBadge.scale.set(0.55, 0.55, 0.55);
+      startBadge.position.set(startCoords.x, 0.45, startCoords.z + 0.75);
+      scene.add(startBadge);
+
+      const finishCoords = getTileCoordinates(TOTAL_TILES);
+      const finishBadge = makeTextSprite('FINISH', '#dc2626', '#fef08a', 34, 240, 85);
+      finishBadge.scale.set(0.55, 0.55, 0.55);
+      finishBadge.position.set(finishCoords.x, 0.45, finishCoords.z - 0.75);
+      scene.add(finishBadge);
+
+      // Gambar Banyak Tangga Kayu 3D
       Object.entries(LADDERS).forEach(([start, end]) => {
-        drawConnector3D(parseInt(start), parseInt(end), 0x10b981, 0.12);
+        drawLadder3D(parseInt(start), parseInt(end));
       });
 
-      Object.entries(SNAKES).forEach(([start, end]) => {
-        drawConnector3D(parseInt(start), parseInt(end), 0xf43f5e, 0.18);
+      // Gambar Banyak Ular 3D Berlekuk
+      Object.entries(SNAKES).forEach(([start, end], i) => {
+        drawSnake3D(parseInt(start), parseInt(end), i % 2 === 0 ? 0x22c55e : 0x16a34a);
       });
 
-      const pawnGeo = new THREE.ConeGeometry(0.28, 0.8, 16);
+      // Bidak 4 Pemain
+      const pawnGeo = new THREE.ConeGeometry(0.24, 0.72, 16);
       activePlayers.forEach((p, idx) => {
         const pawnMat = new THREE.MeshLambertMaterial({ color: p.color.three });
         const mesh = new THREE.Mesh(pawnGeo, pawnMat);
-        const startPos = getTileCoordinates(1);
         const offset = getPlayerOffset(idx);
-        mesh.position.set(startPos.x + offset.x, 0.5, startPos.z + offset.z);
+        mesh.position.set(startCoords.x + offset.x, 0.44, startCoords.z + offset.z);
         scene.add(mesh);
         p.mesh = mesh;
       });
@@ -356,38 +445,97 @@
       animate3D();
     }
 
+    // Petak 1 di kanan bawah, zig-zag ke kiri, lalu naik ke baris atas
     function getTileCoordinates(num) {
       const idx = num - 1;
-      const row = Math.floor(idx / 10);
-      let col = idx % 10;
-      if (row % 2 === 1) col = 9 - col;
-      return { x: col - 4.5, z: 4.5 - row };
+      const row = Math.floor(idx / COLS); // 0 = baris paling bawah
+      let colFromRight = idx % COLS;
+      if (row % 2 === 1) colFromRight = (COLS - 1) - colFromRight;
+      const col = (COLS - 1) - colFromRight;
+
+      return {
+        x: col - (COLS / 2) + 0.5,
+        z: (ROWS / 2) - 0.5 - row
+      };
     }
 
     function getPlayerOffset(playerIdx) {
       const offsets = [
-        { x: -0.22, z: -0.22 },
-        { x:  0.22, z: -0.22 },
-        { x: -0.22, z:  0.22 },
-        { x:  0.22, z:  0.22 }
+        { x: -0.2, z: -0.2 },
+        { x:  0.2, z: -0.2 },
+        { x: -0.2, z:  0.2 },
+        { x:  0.2, z:  0.2 }
       ];
       return offsets[playerIdx];
     }
 
-    function drawConnector3D(startTile, endTile, colorHex, radius) {
+    // Tangga kayu 3D dengan 2 rel & anak tangga
+    function drawLadder3D(startTile, endTile) {
       const p1 = getTileCoordinates(startTile);
       const p2 = getTileCoordinates(endTile);
-      const v1 = new THREE.Vector3(p1.x, 0.15, p1.z);
-      const v2 = new THREE.Vector3(p2.x, 0.15, p2.z);
+      const v1 = new THREE.Vector3(p1.x, 0.14, p1.z);
+      const v2 = new THREE.Vector3(p2.x, 0.14, p2.z);
 
-      const distance = v1.distanceTo(v2);
-      const geo = new THREE.CylinderGeometry(radius, radius, distance, 8);
-      const mat = new THREE.MeshLambertMaterial({ color: colorHex });
-      const mesh = new THREE.Mesh(geo, mat);
+      const dir = v2.clone().sub(v1);
+      const length = dir.length();
+      const unitDir = dir.clone().normalize();
+      const perp = new THREE.Vector3(-unitDir.z, 0, unitDir.x).multiplyScalar(0.16);
 
-      mesh.position.copy(v1).lerp(v2, 0.5);
-      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v2.clone().sub(v1).normalize());
-      scene.add(mesh);
+      const railGeo = new THREE.CylinderGeometry(0.045, 0.045, length, 8);
+      const woodMat = new THREE.MeshLambertMaterial({ color: 0xd97706 });
+
+      const leftRail = new THREE.Mesh(railGeo, woodMat);
+      leftRail.position.copy(v1).lerp(v2, 0.5).add(perp);
+      leftRail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), unitDir);
+      scene.add(leftRail);
+
+      const rightRail = new THREE.Mesh(railGeo, woodMat);
+      rightRail.position.copy(v1).lerp(v2, 0.5).sub(perp);
+      rightRail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), unitDir);
+      scene.add(rightRail);
+
+      const rungs = Math.max(3, Math.floor(length * 2.2));
+      const rungGeo = new THREE.CylinderGeometry(0.032, 0.032, 0.34, 8);
+      for (let i = 1; i < rungs; i++) {
+        const t = i / rungs;
+        const pos = v1.clone().lerp(v2, t);
+        const rung = new THREE.Mesh(rungGeo, woodMat);
+        rung.position.copy(pos);
+        rung.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), perp.clone().normalize());
+        scene.add(rung);
+      }
+    }
+
+    // Ular 3D berlekuk + kepala
+    function drawSnake3D(startTile, endTile, bodyColor) {
+      const p1 = getTileCoordinates(startTile); // Kepala ular (turun dari sini)
+      const p2 = getTileCoordinates(endTile);   // Ekor ular
+
+      const vStart = new THREE.Vector3(p1.x, 0.2, p1.z);
+      const vEnd = new THREE.Vector3(p2.x, 0.18, p2.z);
+      const mid = vStart.clone().lerp(vEnd, 0.5);
+
+      const dir = vEnd.clone().sub(vStart).normalize();
+      const perp = new THREE.Vector3(-dir.z, 0, dir.x);
+
+      const curve = new THREE.CatmullRomCurve3([
+        vStart,
+        vStart.clone().lerp(mid, 0.5).addScaledVector(perp, 0.45),
+        mid.clone().addScaledVector(perp, -0.45),
+        mid.clone().lerp(vEnd, 0.5).addScaledVector(perp, 0.35),
+        vEnd
+      ]);
+
+      const tubeGeo = new THREE.TubeGeometry(curve, 24, 0.11, 10, false);
+      const snakeMat = new THREE.MeshLambertMaterial({ color: bodyColor });
+      const bodyMesh = new THREE.Mesh(tubeGeo, snakeMat);
+      scene.add(bodyMesh);
+
+      // Kepala ular
+      const headGeo = new THREE.SphereGeometry(0.16, 12, 12);
+      const headMesh = new THREE.Mesh(headGeo, snakeMat);
+      headMesh.position.copy(vStart);
+      scene.add(headMesh);
     }
 
     function animate3D() {
@@ -509,7 +657,8 @@
 
       document.getElementById(`p-pos-${pIdx}`).innerText = `Petak: ${player.pos}`;
 
-      if (player.pos >= 100) {
+      if (player.pos >= TOTAL_TILES) {
+        player.pos = TOTAL_TILES;
         player.finished = true;
         player.finishTime = getFormattedTime();
         finishedCount++;
@@ -532,9 +681,9 @@
       return new Promise(async (resolve) => {
         const player = activePlayers[pIdx];
         for (let s = 0; s < steps; s++) {
-          if (player.pos >= 100) break;
+          if (player.pos >= TOTAL_TILES) break;
           const nextTile = player.pos + 1;
-          await animateSingleJump(pIdx, player.pos, nextTile, 220);
+          await animateSingleJump(pIdx, player.pos, nextTile, 200);
           player.pos = nextTile;
         }
         resolve();
@@ -570,12 +719,12 @@
 
           player.mesh.position.x = startX + (endX - startX) * t;
           player.mesh.position.z = startZ + (endZ - startZ) * t;
-          player.mesh.position.y = 0.5 + Math.sin(t * Math.PI) * 1.2;
+          player.mesh.position.y = 0.44 + Math.sin(t * Math.PI) * 1.1;
 
           if (t < 1) {
             requestAnimationFrame(step);
           } else {
-            player.mesh.position.y = 0.5;
+            player.mesh.position.y = 0.44;
             resolve();
           }
         }
