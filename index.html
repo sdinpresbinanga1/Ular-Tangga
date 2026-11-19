@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ular Tangga SD Inpres Binanga 1</title>
+  <title>Ular Tangga Pembelajaran</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; color: #f8fafc; }
@@ -37,78 +37,46 @@
     /* Layar Game Split */
     #screen-game { padding: 0; justify-content: flex-start; }
 
-    /* Area Papan Gambar Penuh di Atas */
+    /* Area Papan di Atas */
     #board-section {
       width: 100%;
-      height: 52%;
+      height: 53%;
       position: relative;
-      background: #0ea5e9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #000000;
       overflow: hidden;
     }
 
-    #board-wrapper {
-      position: relative;
+    #board-canvas {
       width: 100%;
       height: 100%;
-      max-width: 100%;
-      max-height: 100%;
-    }
-
-    #board-img {
-      width: 100%;
-      height: 100%;
-      object-fit: fill;
       display: block;
-    }
-
-    /* Bidak Pemain di Atas Gambar */
-    .pawn {
-      position: absolute;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 3px solid #ffffff;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.55);
-      transform: translate(-50%, -50%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 900;
-      color: #ffffff;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-      z-index: 6;
-      pointer-events: none;
     }
 
     #hud-top {
       position: absolute;
       top: 8px;
-      left: 12px;
-      right: 12px;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
-      justify-content: space-between;
+      gap: 12px;
       pointer-events: none;
       z-index: 12;
     }
+
     .hud-badge {
       background: rgba(15, 23, 42, 0.88);
       color: #f8fafc;
-      padding: 5px 14px;
+      padding: 4px 12px;
       border-radius: 20px;
       font-weight: bold;
-      font-size: 13px;
+      font-size: 12px;
       border: 1px solid #38bdf8;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
 
     /* 4 Panel Siswa Bawah */
     #players-panel {
       width: 100%;
-      height: 48%;
+      height: 47%;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 6px;
@@ -153,8 +121,8 @@
     }
 
     .dice-btn {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 10px;
       font-size: 18px;
       font-weight: 900;
@@ -168,7 +136,6 @@
       touch-action: manipulation;
     }
 
-    /* Dadu Menyala Saat Benar */
     .dice-btn.lit {
       background: linear-gradient(145deg, #facc15, #f59e0b);
       color: #0f172a;
@@ -300,9 +267,7 @@
         <div class="hud-badge" id="hud-kelas">Kelas: -</div>
         <div class="hud-badge" id="hud-timer">Sisa Waktu: 06:00</div>
       </div>
-      <div id="board-wrapper">
-        <img id="board-img" src="Papan Ular Tangga SD Inpres Binanga 1.webp" alt="Papan Ular Tangga">
-      </div>
+      <canvas id="board-canvas"></canvas>
     </div>
     <div id="players-panel"></div>
   </div>
@@ -331,29 +296,26 @@
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxn2cHrynm_OZDfUttcEx6OFrzn-BWmzNLEVyfVAP2eEjGINc93Fy28MG6GrPm7qTPqJA/exec';
 
-    const SESSION_SECONDS = 6 * 60; // 6 menit = 360 detik
+    const SESSION_SECONDS = 6 * 60; // 6 menit
     const COLS = 10;
-    const ROWS = 10;
-    const TOTAL_TILES = 100;
+    const ROWS = 5;
+    const TOTAL_TILES = COLS * ROWS; // 50 petak (1 di kiri bawah START, 50 di kanan atas FINISH)
 
-    // Tangga & Ular yang rapi dan tidak berdempetan
-    const LADDERS = {
-      5: 26,
-      14: 35,
-      28: 49,
-      42: 63,
-      54: 75,
-      68: 89
-    };
+    // Tangga (naik dari bawah ke atas) & Ular (kepala di atas, ekor di bawah) - disebar rapi tanpa tumpang tindih
+    const LADDERS = [
+      { from: 2,  to: 14 },
+      { from: 6,  to: 18 },
+      { from: 13, to: 26 },
+      { from: 22, to: 35 },
+      { from: 29, to: 42 }
+    ];
 
-    const SNAKES = {
-      24: 7,
-      38: 18,
-      52: 31,
-      66: 46,
-      82: 61,
-      96: 74
-    };
+    // head = petak atas (kepala ular), tail = petak bawah (ekor ular)
+    const SNAKES = [
+      { head: 39, tail: 25 },
+      { head: 44, tail: 31 },
+      { head: 48, tail: 36 }
+    ];
 
     const PLAYER_COLORS = [
       { hex: '#ef4444', label: '1' },
@@ -472,14 +434,15 @@
         color: PLAYER_COLORS[idx],
         pos: 1,
         score: 0,
-        canRoll: false,       // Dadu menyala hanya jika menjawab benar
-        isAnswering: false,   // Menjawab soal aktif
-        isMoving: false,      // Sedang melompat
+        canRoll: false,
+        isMoving: false,
         finished: false,
         finishElapsed: null,
         currentSoalIdx: Math.floor(Math.random() * soalLen),
         lastDice: '-',
-        pawnEl: null
+        visualX: 0,
+        visualY: 0,
+        jumpLift: 0
       }));
       availableStudents = pool.slice(4);
       renderSelectedPlayers();
@@ -511,56 +474,209 @@
     }
 
     // ==========================================
-    // 4. PAPAN GAMBAR 2D & BIDAK PEMAIN
+    // 4. PAPAN GAMBAR CANVAS (HITAM PUTIH + TANGGA + ULAR)
     // ==========================================
-    function getTilePercent(num) {
-      const idx = num - 1;
-      const row = Math.floor(idx / COLS); // 0 = bawah, 9 = atas
-      let col = idx % COLS;
-      if (row % 2 === 1) col = (COLS - 1) - col;
+    let canvas, ctx;
 
-      // Area kotak papan di dalam gambar penuh
-      const leftMin = 12;
-      const leftMax = 88;
-      const topMin = 17;
-      const topMax = 93;
-
-      const xPct = leftMin + ((col + 0.5) / COLS) * (leftMax - leftMin);
-      const yPct = topMax - ((row + 0.5) / ROWS) * (topMax - topMin);
-      return { x: xPct, y: yPct };
-    }
-
-    function getPlayerSubOffset(idx) {
-      const offsets = [
-        { dx: -1.1, dy: -1.1 },
-        { dx:  1.1, dy: -1.1 },
-        { dx: -1.1, dy:  1.1 },
-        { dx:  1.1, dy:  1.1 }
-      ];
-      return offsets[idx];
-    }
-
-    function initBoardPawns() {
-      const wrapper = document.getElementById('board-wrapper');
-      wrapper.querySelectorAll('.pawn').forEach(el => el.remove());
+    function setupCanvas() {
+      canvas = document.getElementById('board-canvas');
+      ctx = canvas.getContext('2d');
+      const section = document.getElementById('board-section');
+      canvas.width = section.clientWidth;
+      canvas.height = section.clientHeight;
 
       activePlayers.forEach((p, idx) => {
-        const el = document.createElement('div');
-        el.className = 'pawn';
-        el.style.backgroundColor = p.color.hex;
-        el.innerText = p.color.label;
-        wrapper.appendChild(el);
-        p.pawnEl = el;
-        placePawnAtTile(idx, 1, 0);
+        const pt = getTileCenterPx(p.pos, idx);
+        p.visualX = pt.x;
+        p.visualY = pt.y;
+        p.jumpLift = 0;
       });
     }
 
-    function placePawnAtTile(pIdx, tileNum, jumpLiftPct = 0) {
-      const p = activePlayers[pIdx];
-      const coord = getTilePercent(tileNum);
-      const sub = getPlayerSubOffset(pIdx);
-      p.pawnEl.style.left = `${coord.x + sub.dx}%`;
-      p.pawnEl.style.top = `${coord.y + sub.dy - jumpLiftPct}%`;
+    // Petak 1 di kiri bawah (START), zig-zag ke kanan, lalu naik ke baris atas
+    function getTileGrid(num) {
+      const idx = num - 1;
+      const rowFromBottom = Math.floor(idx / COLS); // 0 = bawah, ROWS-1 = atas
+      let col = idx % COLS;
+      if (rowFromBottom % 2 === 1) col = (COLS - 1) - col;
+      const row = (ROWS - 1) - rowFromBottom; // 0 = baris atas canvas
+      return { col, row };
+    }
+
+    function getTileCenterPx(num, playerIdx = null) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const cellW = w / COLS;
+      const cellH = h / ROWS;
+      const { col, row } = getTileGrid(num);
+
+      let cx = (col + 0.5) * cellW;
+      let cy = (row + 0.5) * cellH;
+
+      if (playerIdx !== null) {
+        const spreadX = Math.min(cellW * 0.22, 16);
+        const spreadY = Math.min(cellH * 0.22, 14);
+        const offsets = [
+          { dx: -spreadX, dy: -spreadY },
+          { dx:  spreadX, dy: -spreadY },
+          { dx: -spreadX, dy:  spreadY },
+          { dx:  spreadX, dy:  spreadY }
+        ];
+        cx += offsets[playerIdx].dx;
+        cy += offsets[playerIdx].dy;
+      }
+
+      return { x: cx, y: cy };
+    }
+
+    function drawBoard() {
+      if (!ctx || !canvas) return;
+      const w = canvas.width;
+      const h = canvas.height;
+      const cellW = w / COLS;
+      const cellH = h / ROWS;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Kotak hitam putih selang-seling penuh
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const isWhite = (r + c) % 2 === 0;
+          ctx.fillStyle = isWhite ? '#ffffff' : '#000000';
+          ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
+        }
+      }
+
+      // Tulisan START di petak 1 (kiri bawah) & FINISH di petak terakhir (kanan atas)
+      const startPt = getTileCenterPx(1);
+      ctx.font = `900 ${Math.max(12, Math.floor(cellH * 0.24))}px "Segoe UI", Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#000000';
+      ctx.fillText('START', startPt.x, startPt.y);
+
+      const finishPt = getTileCenterPx(TOTAL_TILES);
+      ctx.fillStyle = '#000000';
+      ctx.fillText('FINISH', finishPt.x, finishPt.y);
+
+      // Gambar Tangga Merah
+      LADDERS.forEach(lad => {
+        const p1 = getTileCenterPx(lad.from);
+        const p2 = getTileCenterPx(lad.to);
+        drawLadder(p1.x, p1.y, p2.x, p2.y);
+      });
+
+      // Gambar Ular Kuning (kepala selalu di bagian atas)
+      SNAKES.forEach(snk => {
+        const pHead = getTileCenterPx(snk.head);
+        const pTail = getTileCenterPx(snk.tail);
+        drawSnakeTopHead(pHead.x, pHead.y, pTail.x, pTail.y);
+      });
+
+      // Gambar 4 Bidak Pemain
+      activePlayers.forEach((p, idx) => {
+        const radius = Math.max(9, Math.min(cellW, cellH) * 0.17);
+        const py = p.visualY - p.jumpLift;
+
+        ctx.beginPath();
+        ctx.arc(p.visualX, py, radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color.hex;
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.max(10, Math.floor(radius * 1.05))}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.color.label, p.visualX, py);
+      });
+    }
+
+    function drawLadder(x1, y1, x2, y2) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.hypot(dx, dy);
+      if (len === 0) return;
+
+      const nx = -dy / len;
+      const ny = dx / len;
+      const halfWidth = 10;
+
+      ctx.save();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+
+      // Dua rel samping
+      ctx.beginPath();
+      ctx.moveTo(x1 + nx * halfWidth, y1 + ny * halfWidth);
+      ctx.lineTo(x2 + nx * halfWidth, y2 + ny * halfWidth);
+      ctx.moveTo(x1 - nx * halfWidth, y1 - ny * halfWidth);
+      ctx.lineTo(x2 - nx * halfWidth, y2 - ny * halfWidth);
+      ctx.stroke();
+
+      // Anak tangga
+      const steps = Math.max(3, Math.floor(len / 22));
+      ctx.lineWidth = 3;
+      for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        const rx = x1 + dx * t;
+        const ry = y1 + dy * t;
+        ctx.beginPath();
+        ctx.moveTo(rx + nx * halfWidth, ry + ny * halfWidth);
+        ctx.lineTo(rx - nx * halfWidth, ry - ny * halfWidth);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawSnakeTopHead(headX, headY, tailX, tailY) {
+      // Pastikan kepala selalu di atas (y lebih kecil) dan ekor di bawah (y lebih besar)
+      const topX = headY <= tailY ? headX : tailX;
+      const topY = headY <= tailY ? headY : tailY;
+      const botX = headY <= tailY ? tailX : headY === tailY ? tailX : headX;
+      const botY = headY <= tailY ? tailY : headY;
+
+      const dx = botX - topX;
+      const dy = botY - topY;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const wave = 16;
+
+      ctx.save();
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(topX, topY);
+      ctx.bezierCurveTo(
+        topX + dx * 0.33 + nx * wave, topY + dy * 0.33 + ny * wave,
+        topX + dx * 0.66 - nx * wave, topY + dy * 0.66 - ny * wave,
+        botX, botY
+      );
+      ctx.stroke();
+
+      // Kepala ular di atas
+      ctx.beginPath();
+      ctx.arc(topX, topY, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#eab308';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#854d0e';
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function renderLoop() {
+      if (document.getElementById('screen-game').classList.contains('active')) {
+        drawBoard();
+      }
+      requestAnimationFrame(renderLoop);
     }
 
     // ==========================================
@@ -581,7 +697,7 @@
       updateTimerText();
 
       showScreen('screen-game');
-      initBoardPawns();
+      setupCanvas();
       renderPlayerPanels();
 
       clearInterval(timerInterval);
@@ -740,7 +856,6 @@
       document.getElementById(`dice-btn-${pIdx}`).innerText = String(diceValue);
       showToast(pIdx, `Dadu keluar: ${diceValue}!`, '#facc15');
 
-      // Langkah maju 1..diceValue
       for (let s = 0; s < diceValue; s++) {
         if (player.pos >= TOTAL_TILES) break;
         const nextTile = player.pos + 1;
@@ -748,17 +863,17 @@
         player.pos = nextTile;
       }
 
-      // Cek Tangga atau Ular
-      if (LADDERS[player.pos]) {
-        const dest = LADDERS[player.pos];
-        showToast(pIdx, `NAIK TANGGA ke petak ${dest}!`, '#4ade80');
-        await animatePawnHop(pIdx, player.pos, dest, 420);
-        player.pos = dest;
-      } else if (SNAKES[player.pos]) {
-        const dest = SNAKES[player.pos];
-        showToast(pIdx, `TURUN ULAR ke petak ${dest}!`, '#fb7185');
-        await animatePawnHop(pIdx, player.pos, dest, 420);
-        player.pos = dest;
+      const ladderHit = LADDERS.find(l => l.from === player.pos);
+      const snakeHit = SNAKES.find(s => s.head === player.pos);
+
+      if (ladderHit) {
+        showToast(pIdx, `NAIK TANGGA ke petak ${ladderHit.to}!`, '#4ade80');
+        await animatePawnHop(pIdx, player.pos, ladderHit.to, 420);
+        player.pos = ladderHit.to;
+      } else if (snakeHit) {
+        showToast(pIdx, `TURUN ULAR ke petak ${snakeHit.tail}!`, '#fb7185');
+        await animatePawnHop(pIdx, player.pos, snakeHit.tail, 420);
+        player.pos = snakeHit.tail;
       }
 
       document.getElementById(`p-pos-${pIdx}`).innerText = `Petak: ${player.pos} | Skor: ${player.score}`;
@@ -781,30 +896,36 @@
     function animatePawnHop(pIdx, fromTile, toTile, duration) {
       return new Promise((resolve) => {
         const p = activePlayers[pIdx];
-        const c1 = getTilePercent(fromTile);
-        const c2 = getTilePercent(toTile);
-        const sub = getPlayerSubOffset(pIdx);
+        const c1 = getTileCenterPx(fromTile, pIdx);
+        const c2 = getTileCenterPx(toTile, pIdx);
         const startTime = performance.now();
 
         function step(now) {
           const t = Math.min((now - startTime) / duration, 1);
-          const curX = c1.x + (c2.x - c1.x) * t + sub.dx;
-          const curY = c1.y + (c2.y - c1.y) * t + sub.dy;
-          const lift = Math.sin(t * Math.PI) * 3.5;
-
-          p.pawnEl.style.left = `${curX}%`;
-          p.pawnEl.style.top = `${curY - lift}%`;
+          p.visualX = c1.x + (c2.x - c1.x) * t;
+          p.visualY = c1.y + (c2.y - c1.y) * t;
+          p.jumpLift = Math.sin(t * Math.PI) * 14;
 
           if (t < 1) {
             requestAnimationFrame(step);
           } else {
-            placePawnAtTile(pIdx, toTile, 0);
+            p.visualX = c2.x;
+            p.visualY = c2.y;
+            p.jumpLift = 0;
             resolve();
           }
         }
         requestAnimationFrame(step);
       });
     }
+
+    window.addEventListener('resize', () => {
+      if (document.getElementById('screen-game').classList.contains('active')) {
+        setupCanvas();
+      }
+    });
+
+    requestAnimationFrame(renderLoop);
 
     // ==========================================
     // 6. AKHIR SESI & SIMPAN KE GOOGLE SHEETS
