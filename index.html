@@ -39,6 +39,7 @@
     /* Card UI */
     .card { background: #1e293b; padding: 26px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.45); width: 100%; max-width: 660px; text-align: center; border: 1px solid #334155; max-height: 88vh; overflow-y: auto; }
     h1, h2 { margin-bottom: 16px; color: #38bdf8; }
+    h3 { margin: 14px 0 8px; color: #facc15; font-size: 16px; }
     input { width: 100%; padding: 12px; margin-bottom: 14px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 16px; }
     button { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: transform 0.08s ease, background-color 0.12s ease; }
     button:hover { background: #0369a1; }
@@ -376,15 +377,16 @@
         <thead>
           <tr>
             <th>Peringkat</th>
-            <th>Nama Siswa</th>
-            <th>Petak Tertinggi</th>
-            <th>Total Nilai</th>
-            <th>Waktu Terbaik</th>
+            <th>Nama</th>
+            <th>Petak</th>
+            <th>Nilai</th>
+            <th>Timer</th>
           </tr>
         </thead>
         <tbody id="top-kelas-tbody"></tbody>
       </table>
       <div class="action-row">
+        <button style="background: #16a34a;" onclick="exportTopClassJPG()">Cetak JPG (Nama - Nilai - Timer)</button>
         <button style="background: #0d9488;" onclick="showScreen('screen-kelas')">Pilih Kelas Lain</button>
         <button onclick="location.reload()">Kembali ke Login Guru</button>
       </div>
@@ -399,21 +401,21 @@
     const ROWS = 5;
     const TOTAL_TILES = COLS * ROWS; // 55 petak
 
-    // Tangga pendek: cukup naik 1 baris kotak saja (+11 petak) & posisi kolom terpisah agar tidak saling bentrok
+    // Tangga tegak lurus (tidak miring), naik 1 baris kotak ke posisi sejajar di baris atas
     const LADDERS = [
-      { from: 2,  to: 15 },
+      { from: 2,  to: 21 },
       { from: 5,  to: 18 },
-      { from: 9,  to: 20 },
-      { from: 24, to: 37 },
-      { from: 28, to: 41 },
-      { from: 32, to: 43 }
+      { from: 9,  to: 14 },
+      { from: 24, to: 43 },
+      { from: 28, to: 39 },
+      { from: 32, to: 35 }
     ];
 
-    // Ular berbeda-beda: kepala di atas (baris lebih tinggi), ekor di bawah
+    // Ular 2D bergambar: kepala di atas (baris lebih tinggi), ekor di bawah
     const SNAKES = [
-      { head: 46, tail: 34, style: 'green-spots' },
-      { head: 50, tail: 39, style: 'orange-stripe' },
-      { head: 53, tail: 30, style: 'purple-band' }
+      { head: 46, tail: 34, style: 'green-cartoon' },
+      { head: 50, tail: 39, style: 'orange-cartoon' },
+      { head: 53, tail: 30, style: 'purple-cartoon' }
     ];
 
     const PLAYER_COLORS = [
@@ -429,9 +431,24 @@
     let availableStudents = [];
     let activePlayers = [];
     let allSessionRecords = [];
+    let latestTopClassRanking = [];
     let remainingSeconds = SESSION_SECONDS;
     let timerInterval = null;
     let gameEnded = false;
+
+    // Dukungan tekan Enter saat login
+    document.addEventListener('DOMContentLoaded', () => {
+      const userInput = document.getElementById('login-user');
+      const passInput = document.getElementById('login-pass');
+      [userInput, passInput].forEach(inp => {
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleLogin();
+          }
+        });
+      });
+    });
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -601,7 +618,7 @@
     }
 
     // ==========================================
-    // 4. PAPAN 11 KOTAK + ULAR BERBEDA + PION CATUR 3D
+    // 4. PAPAN 11 KOTAK + TANGGA TEGAK + ULAR 2D + PION CATUR 3D
     // ==========================================
     let canvas, ctx;
     let scene3D, camera3D, renderer3D, pawnMeshes3D = [];
@@ -733,7 +750,7 @@
         }
       }
 
-      // Label START di petak 1 (kiri bawah) & FINISH di petak 55 (kanan atas)
+      // Label START & FINISH
       const startGrid = getTileGrid(1);
       ctx.font = `900 ${Math.max(11, Math.floor(cellH * 0.22))}px "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
@@ -744,21 +761,21 @@
       const finishGrid = getTileGrid(TOTAL_TILES);
       ctx.fillText('FINISH', (finishGrid.col + 0.5) * cellW, (finishGrid.row + 0.5) * cellH);
 
-      // Tangga pendek (1 baris) tanpa bentrok
+      // Tangga tegak lurus (vertikal, tidak miring)
       LADDERS.forEach(lad => {
         const g1 = getTileGrid(lad.from);
         const g2 = getTileGrid(lad.to);
-        drawLadder(
-          (g1.col + 0.5) * cellW, (g1.row + 0.5) * cellH,
-          (g2.col + 0.5) * cellW, (g2.row + 0.5) * cellH
-        );
+        const cx = (g1.col + 0.5) * cellW;
+        const yBottom = (g1.row + 0.5) * cellH;
+        const yTop = (g2.row + 0.5) * cellH;
+        drawStraightLadder(cx, yBottom, cx, yTop);
       });
 
-      // Ular berbeda-beda dengan kepala dari atas
+      // Ular 2D bergambar dengan kepala dari atas
       SNAKES.forEach(snk => {
         const gHead = getTileGrid(snk.head);
         const gTail = getTileGrid(snk.tail);
-        drawDistinctSnakeTopHead(
+        drawCartoonSnakeTopHead(
           (gHead.col + 0.5) * cellW, (gHead.row + 0.5) * cellH,
           (gTail.col + 0.5) * cellW, (gTail.row + 0.5) * cellH,
           snk.style
@@ -779,43 +796,40 @@
       }
     }
 
-    function drawLadder(x1, y1, x2, y2) {
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const len = Math.hypot(dx, dy);
-      if (len === 0) return;
-
-      const nx = -dy / len;
-      const ny = dx / len;
-      const halfWidth = 8.5;
+    // Tangga vertikal tegak lurus (tidak miring)
+    function drawStraightLadder(cx, y1, cx2, y2) {
+      const topY = Math.min(y1, y2);
+      const botY = Math.max(y1, y2);
+      const halfW = 9;
 
       ctx.save();
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 3.5;
       ctx.lineCap = 'round';
 
+      // Tiang kiri & kanan vertikal
       ctx.beginPath();
-      ctx.moveTo(x1 + nx * halfWidth, y1 + ny * halfWidth);
-      ctx.lineTo(x2 + nx * halfWidth, y2 + ny * halfWidth);
-      ctx.moveTo(x1 - nx * halfWidth, y1 - ny * halfWidth);
-      ctx.lineTo(x2 - nx * halfWidth, y2 - ny * halfWidth);
+      ctx.moveTo(cx - halfW, botY);
+      ctx.lineTo(cx - halfW, topY);
+      ctx.moveTo(cx + halfW, botY);
+      ctx.lineTo(cx + halfW, topY);
       ctx.stroke();
 
-      const steps = Math.max(3, Math.floor(len / 18));
+      // Anak tangga horizontal
+      const rungs = 4;
       ctx.lineWidth = 2.5;
-      for (let i = 1; i < steps; i++) {
-        const t = i / steps;
-        const rx = x1 + dx * t;
-        const ry = y1 + dy * t;
+      for (let i = 1; i < rungs; i++) {
+        const ry = botY - ((botY - topY) * (i / rungs));
         ctx.beginPath();
-        ctx.moveTo(rx + nx * halfWidth, ry + ny * halfWidth);
-        ctx.lineTo(rx - nx * halfWidth, ry - ny * halfWidth);
+        ctx.moveTo(cx - halfW, ry);
+        ctx.lineTo(cx + halfW, ry);
         ctx.stroke();
       }
       ctx.restore();
     }
 
-    function drawDistinctSnakeTopHead(headX, headY, tailX, tailY, style) {
+    // Gambar ular 2D kartun dengan kepala dari atas
+    function drawCartoonSnakeTopHead(headX, headY, tailX, tailY, style) {
       const topX = headY <= tailY ? headX : tailX;
       const topY = headY <= tailY ? headY : tailY;
       const botX = headY <= tailY ? tailX : headX;
@@ -826,66 +840,87 @@
       const len = Math.hypot(dx, dy) || 1;
       const nx = -dy / len;
       const ny = dx / len;
-      const wave = 15;
+      const wave = 16;
 
       const cp1x = topX + dx * 0.33 + nx * wave;
       const cp1y = topY + dy * 0.33 + ny * wave;
       const cp2x = topX + dx * 0.66 - nx * wave;
       const cp2y = topY + dy * 0.66 - ny * wave;
 
-      const palette = {
-        'green-spots': { body: '#22c55e', pattern: '#14532d', head: '#16a34a' },
-        'orange-stripe': { body: '#f97316', pattern: '#7c2d12', head: '#ea580c' },
-        'purple-band': { body: '#a855f7', pattern: '#fef08a', head: '#9333ea' }
-      }[style] || { body: '#22c55e', pattern: '#14532d', head: '#16a34a' };
+      const theme = {
+        'green-cartoon': { body: '#22c55e', belly: '#bbf7d0', spot: '#15803d', head: '#16a34a' },
+        'orange-cartoon': { body: '#f97316', belly: '#fed7aa', spot: '#c2410c', head: '#ea580c' },
+        'purple-cartoon': { body: '#a855f7', belly: '#f3e8ff', spot: '#7e22ce', head: '#9333ea' }
+      }[style] || { body: '#22c55e', belly: '#bbf7d0', spot: '#15803d', head: '#16a34a' };
 
       ctx.save();
       ctx.lineCap = 'round';
 
-      ctx.strokeStyle = palette.body;
-      ctx.lineWidth = 8;
+      // Garis tepi luar badan ular
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 12;
       ctx.beginPath();
       ctx.moveTo(topX, topY);
       ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, botX, botY);
       ctx.stroke();
 
-      ctx.strokeStyle = palette.pattern;
-      ctx.lineWidth = 4;
-      ctx.setLineDash(style === 'orange-stripe' ? [4, 10] : [2, 12]);
+      // Warna utama badan ular
+      ctx.strokeStyle = theme.body;
+      ctx.lineWidth = 9;
       ctx.beginPath();
       ctx.moveTo(topX, topY);
       ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, botX, botY);
       ctx.stroke();
-      ctx.setLineDash([]);
 
-      // Kepala ular di atas
-      ctx.fillStyle = palette.head;
+      // Motif belang/totol 2D sepanjang badan
+      for (let t = 0.18; t <= 0.85; t += 0.16) {
+        const mt = 1 - t;
+        const px = mt*mt*mt*topX + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*botX;
+        const py = mt*mt*mt*topY + 3*mt*mt*t*cp1y + 3*mt*t*t*cp2y + t*t*t*botY;
+        const rSpot = Math.max(2.2, 5 * (1 - t * 0.55));
+        ctx.fillStyle = theme.spot;
+        ctx.beginPath();
+        ctx.arc(px, py, rSpot, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Kepala ular 2D di bagian atas
+      ctx.fillStyle = theme.head;
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(topX, topY, 8.5, 0, Math.PI * 2);
+      ctx.ellipse(topX, topY, 10.5, 8.5, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#ffffff';
       ctx.stroke();
 
-      // Mata ular
+      // Pipi / moncong aksen 2D
+      ctx.fillStyle = theme.belly;
+      ctx.beginPath();
+      ctx.ellipse(topX, topY + 2, 5.5, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Mata ular 2D
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(topX - 3, topY - 2, 2.2, 0, Math.PI * 2);
-      ctx.arc(topX + 3, topY - 2, 2.2, 0, Math.PI * 2);
+      ctx.arc(topX - 4, topY - 2.5, 2.8, 0, Math.PI * 2);
+      ctx.arc(topX + 4, topY - 2.5, 2.8, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.arc(topX - 3, topY - 2, 1.1, 0, Math.PI * 2);
-      ctx.arc(topX + 3, topY - 2, 1.1, 0, Math.PI * 2);
+      ctx.arc(topX - 4, topY - 2.5, 1.3, 0, Math.PI * 2);
+      ctx.arc(topX + 4, topY - 2.5, 1.3, 0, Math.PI * 2);
       ctx.fill();
 
-      // Lidah merah ke atas
+      // Lidah merah bercabang ke atas
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(topX, topY - 8);
+      ctx.moveTo(topX, topY - 8.5);
       ctx.lineTo(topX, topY - 13);
+      ctx.lineTo(topX - 2.5, topY - 15.5);
+      ctx.moveTo(topX, topY - 13);
+      ctx.lineTo(topX + 2.5, topY - 15.5);
       ctx.stroke();
 
       ctx.restore();
@@ -1081,7 +1116,6 @@
       document.getElementById(`dice-btn-${pIdx}`).innerText = String(diceValue);
       showToast(pIdx, `Dadu keluar: ${diceValue}!`, '#facc15');
 
-      // Lompat langkah demi langkah dengan durasi cukup agar animasi lompat terlihat jelas
       for (let s = 0; s < diceValue; s++) {
         if (player.pos >= TOTAL_TILES) break;
         const nextTile = player.pos + 1;
@@ -1129,7 +1163,6 @@
 
         function step(now) {
           const t = Math.min((now - startTime) / duration, 1);
-          // Ease in-out agar lompatan mulus dan tidak kaku
           const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
           p.normX = c1.nx + (c2.nx - c1.nx) * ease;
@@ -1158,7 +1191,7 @@
     requestAnimationFrame(renderLoop);
 
     // ==========================================
-    // 6. TOP NILAI TIAP SESI & TOP KELAS
+    // 6. TOP NILAI TIAP SESI, TOP KELAS & CETAK JPG
     // ==========================================
     async function finishSession(reasonText) {
       if (gameEnded) return;
@@ -1249,14 +1282,14 @@
         }
       });
 
-      const ranking = Array.from(mapStudent.values()).sort((a, b) => {
+      latestTopClassRanking = Array.from(mapStudent.values()).sort((a, b) => {
         if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
         if (b.bestPos !== a.bestPos) return b.bestPos - a.bestPos;
         return a.minTimeSec - b.minTimeSec;
       });
 
       const tbody = document.getElementById('top-kelas-tbody');
-      tbody.innerHTML = ranking.map((item, idx) => `
+      tbody.innerHTML = latestTopClassRanking.map((item, idx) => `
         <tr>
           <td>#${idx + 1}</td>
           <td>${item.name} (${item.kelas.replace('_', ' ')})</td>
@@ -1267,6 +1300,82 @@
       `).join('');
 
       showScreen('screen-top-kelas');
+    }
+
+    // Cetak JPG berisi Nama - Nilai - Timer setelah semua sesi selesai
+    function exportTopClassJPG() {
+      const rowsData = latestTopClassRanking.length > 0
+        ? latestTopClassRanking
+        : allSessionRecords.map(r => ({
+            name: r.name,
+            kelas: r.kelas,
+            totalScore: r.score,
+            minTimeSec: r.timeSec
+          }));
+
+      const width = 1000;
+      const rowHeight = 52;
+      const headerHeight = 150;
+      const footerHeight = 70;
+      const height = headerHeight + Math.max(1, rowsData.length) * rowHeight + footerHeight;
+
+      const jpgCanvas = document.createElement('canvas');
+      jpgCanvas.width = width;
+      jpgCanvas.height = height;
+      const jctx = jpgCanvas.getContext('2d');
+
+      // Latar putih bersih
+      jctx.fillStyle = '#ffffff';
+      jctx.fillRect(0, 0, width, height);
+
+      // Judul
+      jctx.fillStyle = '#0f172a';
+      jctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
+      jctx.textAlign = 'center';
+      jctx.fillText('REKAP HASIL PERMAINAN — NAMA - NILAI - TIMER', width / 2, 48);
+
+      jctx.font = '18px "Segoe UI", Arial, sans-serif';
+      jctx.fillStyle = '#334155';
+      jctx.fillText(`Kelas: ${(currentKelas || '-').replace('_', ' ')} | Total Sesi: ${sessionNumber}`, width / 2, 82);
+
+      // Header Kolom (Nama - Nilai - Timer)
+      const tableTop = 105;
+      jctx.fillStyle = '#0284c7';
+      jctx.fillRect(50, tableTop, width - 100, 42);
+
+      jctx.fillStyle = '#ffffff';
+      jctx.font = 'bold 18px "Segoe UI", Arial, sans-serif';
+      jctx.textAlign = 'left';
+      jctx.fillText('Nama', 75, tableTop + 27);
+      jctx.textAlign = 'center';
+      jctx.fillText('Nilai', 620, tableTop + 27);
+      jctx.fillText('Timer', 830, tableTop + 27);
+
+      // Isi Baris
+      jctx.font = '17px "Segoe UI", Arial, sans-serif';
+      rowsData.forEach((item, idx) => {
+        const y = tableTop + 42 + idx * rowHeight;
+        jctx.fillStyle = idx % 2 === 0 ? '#f8fafc' : '#e2e8f0';
+        jctx.fillRect(50, y, width - 100, rowHeight);
+
+        jctx.strokeStyle = '#cbd5e1';
+        jctx.lineWidth = 1;
+        jctx.strokeRect(50, y, width - 100, rowHeight);
+
+        jctx.fillStyle = '#0f172a';
+        jctx.textAlign = 'left';
+        jctx.fillText(`${idx + 1}. ${item.name}`, 75, y + 32);
+
+        jctx.textAlign = 'center';
+        jctx.fillText(String(item.totalScore ?? 0), 620, y + 32);
+        jctx.fillText(formatSeconds(item.minTimeSec ?? 0), 830, y + 32);
+      });
+
+      const dataUrl = jpgCanvas.toDataURL('image/jpeg', 0.92);
+      const link = document.createElement('a');
+      link.download = `Rekap_Nilai_${currentKelas || 'Kelas'}.jpg`;
+      link.href = dataUrl;
+      link.click();
     }
   </script>
 </body>
