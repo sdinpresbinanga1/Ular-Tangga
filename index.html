@@ -230,7 +230,7 @@
 
       const catBox = document.getElementById('catatan-content');
       if (dbData.catatan && dbData.catatan.length > 0) {
-        catBox.innerHTML = dbData.catatan.map(c => `<p style="margin-bottom:10px;">• ${c}</p>`).join('');
+        catBox.innerHTML = dbData.catatan.map(c => `<p style="margin-bottom:10px;">${c}</p>`).join('');
       } else {
         catBox.innerHTML = '<p>Tidak ada catatan pada database.</p>';
       }
