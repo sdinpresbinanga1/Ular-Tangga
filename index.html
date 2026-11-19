@@ -127,6 +127,33 @@
       z-index: 4;
     }
 
+    /* Layer Label Nama Kecil di Tiap Karakter */
+    #pawn-labels-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      overflow: hidden;
+    }
+
+    .pawn-name-tag {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      background: rgba(15, 23, 42, 0.86);
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.1;
+      padding: 1.5px 5px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      white-space: nowrap;
+      max-width: 74px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.45);
+    }
+
     /* 4 Panel Siswa Bawah */
     #players-panel {
       width: 100%;
@@ -338,6 +365,7 @@
       <div id="board-frame">
         <canvas id="board-canvas"></canvas>
         <canvas id="pawn-3d-canvas"></canvas>
+        <div id="pawn-labels-layer"></div>
       </div>
     </div>
     <div id="players-panel"></div>
@@ -401,20 +429,14 @@
     const ROWS = 5;  // 5 barisan ke atas (1..5 dari bawah ke atas)
     const TOTAL_TILES = COLS * ROWS; // 55 petak
 
-    // Konversi (barisan 1..5 dari bawah, kolom 1..11 dari kiri) -> nomor petak 1..55
     function barisanKolomToTile(barisanFromBottom, kolomFromLeft) {
-      const rIdx = barisanFromBottom - 1; // 0..4
-      const cIdx = kolomFromLeft - 1;   // 0..10
+      const rIdx = barisanFromBottom - 1;
+      const cIdx = kolomFromLeft - 1;
       const isReverse = rIdx % 2 === 1;
       const posInRow = isReverse ? (COLS - 1 - cIdx) : cIdx;
       return rIdx * COLS + posInRow + 1;
     }
 
-    // Tangga sesuai aturan:
-    // - Barisan 1 -> 2 di kolom 9
-    // - Barisan 2 -> 3 di kolom 4
-    // - Barisan 3 -> 4 di kolom 7
-    // - Barisan 4 -> 5 di kolom 2
     const LADDERS = [
       { fromRow: 1, fromCol: 9, toRow: 2, toCol: 9, from: barisanKolomToTile(1, 9), to: barisanKolomToTile(2, 9) },
       { fromRow: 2, fromCol: 4, toRow: 3, toCol: 4, from: barisanKolomToTile(2, 4), to: barisanKolomToTile(3, 4) },
@@ -422,10 +444,6 @@
       { fromRow: 4, fromCol: 2, toRow: 5, toCol: 2, from: barisanKolomToTile(4, 2), to: barisanKolomToTile(5, 2) }
     ];
 
-    // Ular 2D sesuai aturan (kepala selalu di atas, ekor di bawah):
-    // - Kepala di barisan 3 kolom 9, turun ke barisan 1 kolom 6
-    // - Kepala di barisan 4 kolom 4, turun ke barisan 2 kolom 8
-    // - Kepala di barisan 5 kolom 10, turun ke barisan 2 kolom 7
     const SNAKES = [
       { headRow: 3, headCol: 9, tailRow: 1, tailCol: 6, head: barisanKolomToTile(3, 9), tail: barisanKolomToTile(1, 6), style: 'green-cartoon' },
       { headRow: 4, headCol: 4, tailRow: 2, tailCol: 8, head: barisanKolomToTile(4, 4), tail: barisanKolomToTile(2, 8), style: 'orange-cartoon' },
@@ -490,6 +508,12 @@
       setTimeout(() => {
         btnEl.classList.remove('pressed');
       }, 120);
+    }
+
+    function getShortPawnName(fullName) {
+      if (!fullName) return '';
+      const clean = fullName.trim().split(/\s+/)[0];
+      return clean.length > 9 ? clean.slice(0, 9) : clean;
     }
 
     // 1. LOGIN GURU
@@ -631,12 +655,11 @@
     }
 
     // ==========================================
-    // 4. PAPAN 11x5 + TANGGA TEGAK + ULAR 2D + PION CATUR 3D
+    // 4. PAPAN 11x5 + TANGGA TEGAK + ULAR 2D + PION CATUR 3D + LABEL NAMA KECIL
     // ==========================================
     let canvas, ctx;
-    let scene3D, camera3D, renderer3D, pawnMeshes3D = [];
+    let scene3D, camera3D, renderer3D, pawnMeshes3D = [], pawnTagEls = [];
 
-    // Mengembalikan { col: 0..10 (kiri ke kanan), row: 0..4 (atas ke bawah canvas) }
     function getTileGrid(num) {
       const idx = num - 1;
       const rowFromBottom = Math.floor(idx / COLS);
@@ -646,7 +669,6 @@
       return { col, row };
     }
 
-    // Konversi langsung dari (barisan 1..5 dari bawah, kolom 1..11 dari kiri) ke koordinat canvas
     function rowColToCanvasXY(barisanFromBottom, kolomFromLeft, w, h) {
       const cellW = w / COLS;
       const cellH = h / ROWS;
@@ -715,11 +737,23 @@
       dirLight.position.set(2, 4, 6);
       scene3D.add(dirLight);
 
+      const labelsLayer = document.getElementById('pawn-labels-layer');
+      labelsLayer.innerHTML = '';
+
       pawnMeshes3D = [];
+      pawnTagEls = [];
+
       activePlayers.forEach((p, idx) => {
         const chessGroup = createChessPawnMesh(p.color.three);
         scene3D.add(chessGroup);
         pawnMeshes3D.push(chessGroup);
+
+        const tag = document.createElement('div');
+        tag.className = 'pawn-name-tag';
+        tag.style.borderColor = p.color.hex;
+        tag.innerText = getShortPawnName(p.name);
+        labelsLayer.appendChild(tag);
+        pawnTagEls.push(tag);
 
         const pt = getTileNormalized(p.pos, idx);
         p.normX = pt.nx;
@@ -767,7 +801,6 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      // 11 kolom ke samping x 5 barisan ke atas hitam putih selang-seling
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const isWhite = (r + c) % 2 === 0;
@@ -776,7 +809,6 @@
         }
       }
 
-      // Label START (barisan 1 kolom 1) & FINISH (barisan 5 kolom 11)
       const startPt = rowColToCanvasXY(1, 1, w, h);
       ctx.font = `900 ${Math.max(11, Math.floor(cellH * 0.22))}px "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
@@ -787,29 +819,37 @@
       const finishPt = rowColToCanvasXY(5, 11, w, h);
       ctx.fillText('FINISH', finishPt.x, finishPt.y);
 
-      // Tangga tegak lurus sesuai baris & kolom
       LADDERS.forEach(lad => {
         const pBottom = rowColToCanvasXY(lad.fromRow, lad.fromCol, w, h);
         const pTop = rowColToCanvasXY(lad.toRow, lad.toCol, w, h);
         drawStraightLadder(pBottom.x, pBottom.y, pTop.x, pTop.y);
       });
 
-      // Ular 2D bergambar sesuai baris & kolom (kepala dari atas)
       SNAKES.forEach(snk => {
         const pHead = rowColToCanvasXY(snk.headRow, snk.headCol, w, h);
         const pTail = rowColToCanvasXY(snk.tailRow, snk.tailCol, w, h);
         drawCartoonSnakeTopHead(pHead.x, pHead.y, pTail.x, pTail.y, snk.style);
       });
 
-      // Update posisi pion catur 3D
       if (renderer3D && scene3D && camera3D) {
         const aspect = w / h;
         const frustumSize = 2.0;
         activePlayers.forEach((p, idx) => {
           const mesh = pawnMeshes3D[idx];
           if (!mesh) return;
-          mesh.position.x = p.normX * ((frustumSize * aspect) / 2);
-          mesh.position.y = (-p.normY + p.jumpLift) * (frustumSize / 2);
+          const worldX = p.normX * ((frustumSize * aspect) / 2);
+          const worldY = (-p.normY + p.jumpLift) * (frustumSize / 2);
+          mesh.position.x = worldX;
+          mesh.position.y = worldY;
+
+          // Posisi label nama kecil tepat di atas kepala pion
+          const tag = pawnTagEls[idx];
+          if (tag) {
+            const px = ((p.normX + 1) / 2) * w;
+            const py = (((p.normY - p.jumpLift) + 1) / 2) * h - Math.max(14, cellH * 0.22);
+            tag.style.left = `${px}px`;
+            tag.style.top = `${py}px`;
+          }
         });
         renderer3D.render(scene3D, camera3D);
       }
@@ -845,7 +885,6 @@
     }
 
     function drawCartoonSnakeTopHead(headX, headY, tailX, tailY, style) {
-      // Pastikan kepala selalu di atas (y lebih kecil)
       const topX = headY <= tailY ? headX : tailX;
       const topY = headY <= tailY ? headY : tailY;
       const botX = headY <= tailY ? tailX : headX;
@@ -897,7 +936,6 @@
         ctx.fill();
       }
 
-      // Kepala ular 2D di bagian atas
       ctx.fillStyle = theme.head;
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 2.5;
