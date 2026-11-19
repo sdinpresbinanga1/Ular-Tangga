@@ -397,25 +397,39 @@
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxn2cHrynm_OZDfUttcEx6OFrzn-BWmzNLEVyfVAP2eEjGINc93Fy28MG6GrPm7qTPqJA/exec';
 
     const SESSION_SECONDS = 6 * 60; // 6 menit
-    const COLS = 11; // 11 kotak catur ke samping
-    const ROWS = 5;
+    const COLS = 11; // 11 kolom ke samping kanan (1..11)
+    const ROWS = 5;  // 5 barisan ke atas (1..5 dari bawah ke atas)
     const TOTAL_TILES = COLS * ROWS; // 55 petak
 
-    // Tangga tegak lurus (tidak miring), naik 1 baris kotak ke posisi sejajar di baris atas
+    // Konversi (barisan 1..5 dari bawah, kolom 1..11 dari kiri) -> nomor petak 1..55
+    function barisanKolomToTile(barisanFromBottom, kolomFromLeft) {
+      const rIdx = barisanFromBottom - 1; // 0..4
+      const cIdx = kolomFromLeft - 1;   // 0..10
+      const isReverse = rIdx % 2 === 1;
+      const posInRow = isReverse ? (COLS - 1 - cIdx) : cIdx;
+      return rIdx * COLS + posInRow + 1;
+    }
+
+    // Tangga sesuai aturan:
+    // - Barisan 1 -> 2 di kolom 9
+    // - Barisan 2 -> 3 di kolom 4
+    // - Barisan 3 -> 4 di kolom 7
+    // - Barisan 4 -> 5 di kolom 2
     const LADDERS = [
-      { from: 2,  to: 21 },
-      { from: 5,  to: 18 },
-      { from: 9,  to: 14 },
-      { from: 24, to: 43 },
-      { from: 28, to: 39 },
-      { from: 32, to: 35 }
+      { fromRow: 1, fromCol: 9, toRow: 2, toCol: 9, from: barisanKolomToTile(1, 9), to: barisanKolomToTile(2, 9) },
+      { fromRow: 2, fromCol: 4, toRow: 3, toCol: 4, from: barisanKolomToTile(2, 4), to: barisanKolomToTile(3, 4) },
+      { fromRow: 3, fromCol: 7, toRow: 4, toCol: 7, from: barisanKolomToTile(3, 7), to: barisanKolomToTile(4, 7) },
+      { fromRow: 4, fromCol: 2, toRow: 5, toCol: 2, from: barisanKolomToTile(4, 2), to: barisanKolomToTile(5, 2) }
     ];
 
-    // Ular 2D bergambar: kepala di atas (baris lebih tinggi), ekor di bawah
+    // Ular 2D sesuai aturan (kepala selalu di atas, ekor di bawah):
+    // - Kepala di barisan 3 kolom 9, turun ke barisan 1 kolom 6
+    // - Kepala di barisan 4 kolom 4, turun ke barisan 2 kolom 8
+    // - Kepala di barisan 5 kolom 10, turun ke barisan 2 kolom 7
     const SNAKES = [
-      { head: 46, tail: 34, style: 'green-cartoon' },
-      { head: 50, tail: 39, style: 'orange-cartoon' },
-      { head: 53, tail: 30, style: 'purple-cartoon' }
+      { headRow: 3, headCol: 9, tailRow: 1, tailCol: 6, head: barisanKolomToTile(3, 9), tail: barisanKolomToTile(1, 6), style: 'green-cartoon' },
+      { headRow: 4, headCol: 4, tailRow: 2, tailCol: 8, head: barisanKolomToTile(4, 4), tail: barisanKolomToTile(2, 8), style: 'orange-cartoon' },
+      { headRow: 5, headCol: 10, tailRow: 2, tailCol: 7, head: barisanKolomToTile(5, 10), tail: barisanKolomToTile(2, 7), style: 'purple-cartoon' }
     ];
 
     const PLAYER_COLORS = [
@@ -436,7 +450,6 @@
     let timerInterval = null;
     let gameEnded = false;
 
-    // Dukungan tekan Enter saat login
     document.addEventListener('DOMContentLoaded', () => {
       const userInput = document.getElementById('login-user');
       const passInput = document.getElementById('login-pass');
@@ -618,11 +631,12 @@
     }
 
     // ==========================================
-    // 4. PAPAN 11 KOTAK + TANGGA TEGAK + ULAR 2D + PION CATUR 3D
+    // 4. PAPAN 11x5 + TANGGA TEGAK + ULAR 2D + PION CATUR 3D
     // ==========================================
     let canvas, ctx;
     let scene3D, camera3D, renderer3D, pawnMeshes3D = [];
 
+    // Mengembalikan { col: 0..10 (kiri ke kanan), row: 0..4 (atas ke bawah canvas) }
     function getTileGrid(num) {
       const idx = num - 1;
       const rowFromBottom = Math.floor(idx / COLS);
@@ -630,6 +644,18 @@
       if (rowFromBottom % 2 === 1) col = (COLS - 1) - col;
       const row = (ROWS - 1) - rowFromBottom;
       return { col, row };
+    }
+
+    // Konversi langsung dari (barisan 1..5 dari bawah, kolom 1..11 dari kiri) ke koordinat canvas
+    function rowColToCanvasXY(barisanFromBottom, kolomFromLeft, w, h) {
+      const cellW = w / COLS;
+      const cellH = h / ROWS;
+      const colIdx = kolomFromLeft - 1;
+      const rowIdx = ROWS - barisanFromBottom;
+      return {
+        x: (colIdx + 0.5) * cellW,
+        y: (rowIdx + 0.5) * cellH
+      };
     }
 
     function getTileNormalized(num, playerIdx = null) {
@@ -741,7 +767,7 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      // 11 kotak ke samping x 5 baris hitam putih selang-seling
+      // 11 kolom ke samping x 5 barisan ke atas hitam putih selang-seling
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const isWhite = (r + c) % 2 === 0;
@@ -750,36 +776,29 @@
         }
       }
 
-      // Label START & FINISH
-      const startGrid = getTileGrid(1);
+      // Label START (barisan 1 kolom 1) & FINISH (barisan 5 kolom 11)
+      const startPt = rowColToCanvasXY(1, 1, w, h);
       ctx.font = `900 ${Math.max(11, Math.floor(cellH * 0.22))}px "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#000000';
-      ctx.fillText('START', (startGrid.col + 0.5) * cellW, (startGrid.row + 0.5) * cellH);
+      ctx.fillText('START', startPt.x, startPt.y);
 
-      const finishGrid = getTileGrid(TOTAL_TILES);
-      ctx.fillText('FINISH', (finishGrid.col + 0.5) * cellW, (finishGrid.row + 0.5) * cellH);
+      const finishPt = rowColToCanvasXY(5, 11, w, h);
+      ctx.fillText('FINISH', finishPt.x, finishPt.y);
 
-      // Tangga tegak lurus (vertikal, tidak miring)
+      // Tangga tegak lurus sesuai baris & kolom
       LADDERS.forEach(lad => {
-        const g1 = getTileGrid(lad.from);
-        const g2 = getTileGrid(lad.to);
-        const cx = (g1.col + 0.5) * cellW;
-        const yBottom = (g1.row + 0.5) * cellH;
-        const yTop = (g2.row + 0.5) * cellH;
-        drawStraightLadder(cx, yBottom, cx, yTop);
+        const pBottom = rowColToCanvasXY(lad.fromRow, lad.fromCol, w, h);
+        const pTop = rowColToCanvasXY(lad.toRow, lad.toCol, w, h);
+        drawStraightLadder(pBottom.x, pBottom.y, pTop.x, pTop.y);
       });
 
-      // Ular 2D bergambar dengan kepala dari atas
+      // Ular 2D bergambar sesuai baris & kolom (kepala dari atas)
       SNAKES.forEach(snk => {
-        const gHead = getTileGrid(snk.head);
-        const gTail = getTileGrid(snk.tail);
-        drawCartoonSnakeTopHead(
-          (gHead.col + 0.5) * cellW, (gHead.row + 0.5) * cellH,
-          (gTail.col + 0.5) * cellW, (gTail.row + 0.5) * cellH,
-          snk.style
-        );
+        const pHead = rowColToCanvasXY(snk.headRow, snk.headCol, w, h);
+        const pTail = rowColToCanvasXY(snk.tailRow, snk.tailCol, w, h);
+        drawCartoonSnakeTopHead(pHead.x, pHead.y, pTail.x, pTail.y, snk.style);
       });
 
       // Update posisi pion catur 3D
@@ -796,7 +815,6 @@
       }
     }
 
-    // Tangga vertikal tegak lurus (tidak miring)
     function drawStraightLadder(cx, y1, cx2, y2) {
       const topY = Math.min(y1, y2);
       const botY = Math.max(y1, y2);
@@ -807,7 +825,6 @@
       ctx.lineWidth = 3.5;
       ctx.lineCap = 'round';
 
-      // Tiang kiri & kanan vertikal
       ctx.beginPath();
       ctx.moveTo(cx - halfW, botY);
       ctx.lineTo(cx - halfW, topY);
@@ -815,7 +832,6 @@
       ctx.lineTo(cx + halfW, topY);
       ctx.stroke();
 
-      // Anak tangga horizontal
       const rungs = 4;
       ctx.lineWidth = 2.5;
       for (let i = 1; i < rungs; i++) {
@@ -828,8 +844,8 @@
       ctx.restore();
     }
 
-    // Gambar ular 2D kartun dengan kepala dari atas
     function drawCartoonSnakeTopHead(headX, headY, tailX, tailY, style) {
+      // Pastikan kepala selalu di atas (y lebih kecil)
       const topX = headY <= tailY ? headX : tailX;
       const topY = headY <= tailY ? headY : tailY;
       const botX = headY <= tailY ? tailX : headX;
@@ -856,7 +872,6 @@
       ctx.save();
       ctx.lineCap = 'round';
 
-      // Garis tepi luar badan ular
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 12;
       ctx.beginPath();
@@ -864,7 +879,6 @@
       ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, botX, botY);
       ctx.stroke();
 
-      // Warna utama badan ular
       ctx.strokeStyle = theme.body;
       ctx.lineWidth = 9;
       ctx.beginPath();
@@ -872,7 +886,6 @@
       ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, botX, botY);
       ctx.stroke();
 
-      // Motif belang/totol 2D sepanjang badan
       for (let t = 0.18; t <= 0.85; t += 0.16) {
         const mt = 1 - t;
         const px = mt*mt*mt*topX + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*botX;
@@ -893,13 +906,11 @@
       ctx.fill();
       ctx.stroke();
 
-      // Pipi / moncong aksen 2D
       ctx.fillStyle = theme.belly;
       ctx.beginPath();
       ctx.ellipse(topX, topY + 2, 5.5, 3, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Mata ular 2D
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(topX - 4, topY - 2.5, 2.8, 0, Math.PI * 2);
@@ -912,7 +923,6 @@
       ctx.arc(topX + 4, topY - 2.5, 1.3, 0, Math.PI * 2);
       ctx.fill();
 
-      // Lidah merah bercabang ke atas
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -1302,7 +1312,6 @@
       showScreen('screen-top-kelas');
     }
 
-    // Cetak JPG berisi Nama - Nilai - Timer setelah semua sesi selesai
     function exportTopClassJPG() {
       const rowsData = latestTopClassRanking.length > 0
         ? latestTopClassRanking
@@ -1324,11 +1333,9 @@
       jpgCanvas.height = height;
       const jctx = jpgCanvas.getContext('2d');
 
-      // Latar putih bersih
       jctx.fillStyle = '#ffffff';
       jctx.fillRect(0, 0, width, height);
 
-      // Judul
       jctx.fillStyle = '#0f172a';
       jctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
       jctx.textAlign = 'center';
@@ -1338,7 +1345,6 @@
       jctx.fillStyle = '#334155';
       jctx.fillText(`Kelas: ${(currentKelas || '-').replace('_', ' ')} | Total Sesi: ${sessionNumber}`, width / 2, 82);
 
-      // Header Kolom (Nama - Nilai - Timer)
       const tableTop = 105;
       jctx.fillStyle = '#0284c7';
       jctx.fillRect(50, tableTop, width - 100, 42);
@@ -1351,7 +1357,6 @@
       jctx.fillText('Nilai', 620, tableTop + 27);
       jctx.fillText('Timer', 830, tableTop + 27);
 
-      // Isi Baris
       jctx.font = '17px "Segoe UI", Arial, sans-serif';
       rowsData.forEach((item, idx) => {
         const y = tableTop + 42 + idx * rowHeight;
