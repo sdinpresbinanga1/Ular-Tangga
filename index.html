@@ -8,7 +8,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #1e293b; color: #f8fafc; }
-    
+
     /* Layar Halaman */
     .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: absolute; top: 0; left: 0; }
     .screen.active { display: flex; }
@@ -45,11 +45,11 @@
     #players-panel { width: 100%; height: 48%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px; background: #0f172a; touch-action: none; }
     .p-card { background: #1e293b; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; border-top: 5px solid #fff; position: relative; overflow: hidden; }
     .p-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; border-bottom: 1px solid #334155; padding-bottom: 4px; }
-    .p-soal { font-size: 13px; font-weight: 600; my: 6px; flex-grow: 1; display: flex; align-items: center; justify-content: center; text-align: center; overflow-y: auto; padding: 4px; }
+    .p-soal { font-size: 13px; font-weight: 600; flex-grow: 1; display: flex; align-items: center; justify-content: center; text-align: center; overflow-y: auto; padding: 4px; }
     .p-options { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
     .opt-btn { background: #334155; color: white; border: 1px solid #475569; padding: 8px 4px; border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; touch-action: manipulation; }
     .opt-btn:active { transform: scale(0.95); background: #0284c7; }
-    .p-status-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; text-align: center; padding: 10px; z-index: 5; }
+    .p-status-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.88); display: none; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; text-align: center; padding: 10px; z-index: 5; }
 
     /* Hasil Akhir */
     table { width: 100%; border-collapse: collapse; margin: 15px 0; }
@@ -66,10 +66,10 @@
   <div id="screen-login" class="screen active">
     <div class="card">
       <h1>Login Admin</h1>
-      <input type="text" id="login-user" placeholder="Username">
-      <input type="password" id="login-pass" placeholder="Password">
+      <input type="text" id="login-user" placeholder="Username" autocomplete="off">
+      <input type="password" id="login-pass" placeholder="Password" autocomplete="off">
       <button id="btn-login" onclick="handleLogin()">Masuk</button>
-      <p id="login-msg" style="color: #f43f5e; margin-top: 10px; font-size: 14px;"></p>
+      <p id="login-msg" style="color: #f43f5e; margin-top: 12px; font-size: 14px; line-height: 1.4;"></p>
     </div>
   </div>
 
@@ -135,20 +135,18 @@
 
   <script>
     // ==========================================
-    // KONFIGURASI URL GOOGLE APPS SCRIPT ANDA
+    // MASUKKAN URL WEB APP APPS SCRIPT BARU ANDA
     // ==========================================
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxn2cHrynm_OZDfUttcEx6OFrzn-BWmzNLEVyfVAP2eEjGINc93Fy28MG6GrPm7qTPqJA/exec';
+    const GAS_URL = 'GANTI_DENGAN_URL_WEB_APP_BARU_ANDA';
 
-    // State Global
     let dbData = { kelas: {}, catatan: [], soal: [] };
     let currentKelas = '';
     let availableStudents = [];
-    let activePlayers = []; // 4 siswa terpilih
+    let activePlayers = [];
     let gameStartTime = 0;
     let timerInterval = null;
     let finishedCount = 0;
 
-    // Warna Karakter (Merah, Biru, Hijau, Kuning)
     const PLAYER_COLORS = [
       { hex: '#ef4444', three: 0xef4444, name: 'Merah' },
       { hex: '#3b82f6', three: 0x3b82f6, name: 'Biru' },
@@ -156,7 +154,6 @@
       { hex: '#eab308', three: 0xeab308, name: 'Kuning' }
     ];
 
-    // Definisi Tangga (Naik) & Ular (Turun) - Petak 1 sampai 100
     const LADDERS = { 4: 25, 13: 46, 33: 49, 42: 63, 50: 69, 62: 81, 74: 92 };
     const SNAKES  = { 27: 5, 40: 3, 43: 18, 54: 31, 66: 45, 76: 58, 89: 53, 99: 41 };
 
@@ -167,33 +164,47 @@
 
     // 1. LOGIN ADMIN
     async function handleLogin() {
-      const user = document.getElementById('login-user').value;
-      const pass = document.getElementById('login-pass').value;
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value.trim();
       const msg = document.getElementById('login-msg');
       const btn = document.getElementById('btn-login');
 
-      if (!user || !pass) { msg.innerText = 'Isi username dan password!'; return; }
+      if (!user || !pass) {
+        msg.innerText = 'Isi username dan password!';
+        return;
+      }
+
       btn.disabled = true;
+      msg.style.color = '#38bdf8';
       msg.innerText = 'Memeriksa akun & memuat database...';
 
       try {
         const resLogin = await fetch(GAS_URL, {
           method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'login', username: user, password: pass })
         });
         const loginJson = await resLogin.json();
 
         if (loginJson.status === 'success') {
           const resData = await fetch(`${GAS_URL}?action=getData`);
-          dbData = await resData.json();
-          renderKelasButtons();
-          showScreen('screen-kelas');
+          const dataJson = await resData.json();
+
+          if (dataJson.status === 'success') {
+            dbData = dataJson;
+            renderKelasButtons();
+            showScreen('screen-kelas');
+          } else {
+            throw new Error(dataJson.message || 'Gagal memuat data sheet');
+          }
         } else {
-          msg.innerText = loginJson.message;
+          msg.style.color = '#f43f5e';
+          msg.innerText = loginJson.message || 'Login gagal!';
           btn.disabled = false;
         }
       } catch (err) {
-        msg.innerText = 'Gagal terhubung ke server. Periksa URL GAS.';
+        msg.style.color = '#f43f5e';
+        msg.innerText = 'Error: ' + err.message;
         btn.disabled = false;
       }
     }
@@ -202,7 +213,12 @@
     function renderKelasButtons() {
       const container = document.getElementById('kelas-list');
       container.innerHTML = '';
-      Object.keys(dbData.kelas).forEach(kls => {
+      const kelasKeys = Object.keys(dbData.kelas || {});
+      if (kelasKeys.length === 0) {
+        container.innerHTML = '<p style="grid-column: span 2; color: #f87171;">Data kelas kosong di sheet Nama.</p>';
+        return;
+      }
+      kelasKeys.forEach(kls => {
         const btn = document.createElement('button');
         btn.className = 'kelas-btn';
         btn.innerText = kls.replace('_', ' ');
@@ -213,11 +229,14 @@
 
     function selectKelas(kls) {
       currentKelas = kls;
-      availableStudents = [...dbData.kelas[kls]];
-      
-      // Tampilkan Catatan
+      availableStudents = [...(dbData.kelas[kls] || [])];
+
       const catBox = document.getElementById('catatan-content');
-      catBox.innerHTML = dbData.catatan.map(c => `<p style="margin-bottom:10px;">• ${c}</p>`).join('');
+      if (dbData.catatan && dbData.catatan.length > 0) {
+        catBox.innerHTML = dbData.catatan.map(c => `<p style="margin-bottom:10px;">• ${c}</p>`).join('');
+      } else {
+        catBox.innerHTML = '<p>Tidak ada catatan pada database.</p>';
+      }
       showScreen('screen-catatan');
     }
 
@@ -229,18 +248,21 @@
     }
 
     function acakUlangSemua() {
-      let pool = [...dbData.kelas[currentKelas]];
+      let pool = [...(dbData.kelas[currentKelas] || [])];
       pool.sort(() => Math.random() - 0.5);
+
+      const soalLen = (dbData.soal && dbData.soal.length > 0) ? dbData.soal.length : 1;
+
       activePlayers = pool.slice(0, 4).map((name, idx) => ({
         id: idx,
         name: name,
         color: PLAYER_COLORS[idx],
-        pos: 1, // Mulai dari petak 1
+        pos: 1,
         score: 0,
         finished: false,
         finishTime: '',
         isMoving: false,
-        currentSoalIdx: Math.floor(Math.random() * dbData.soal.length),
+        currentSoalIdx: Math.floor(Math.random() * soalLen),
         mesh: null
       }));
       availableStudents = pool.slice(4);
@@ -273,12 +295,14 @@
     }
 
     // ==========================================
-    // 4. ENGINE 3D THREE.JS (PAPAN, ULAR, TANGGA)
+    // 4. ENGINE 3D THREE.JS
     // ==========================================
     let scene, camera, renderer;
 
     function init3D() {
       const container = document.getElementById('canvas-container');
+      container.querySelectorAll('canvas').forEach(c => c.remove());
+
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x0f172a);
 
@@ -290,14 +314,12 @@
       renderer.setSize(container.clientWidth, container.clientHeight);
       container.appendChild(renderer.domElement);
 
-      // Pencahayaan
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
       scene.add(ambientLight);
       const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
       dirLight.position.set(8, 15, 10);
       scene.add(dirLight);
 
-      // Buat Papan 10x10 (Petak 1 - 100)
       const tileGeo = new THREE.BoxGeometry(0.96, 0.2, 0.96);
       for (let num = 1; num <= 100; num++) {
         const coords = getTileCoordinates(num);
@@ -308,17 +330,14 @@
         scene.add(tile);
       }
 
-      // Gambar Tangga 3D (Hijau/Emas)
       Object.entries(LADDERS).forEach(([start, end]) => {
         drawConnector3D(parseInt(start), parseInt(end), 0x10b981, 0.12);
       });
 
-      // Gambar Ular 3D (Merah/Ungu)
       Object.entries(SNAKES).forEach(([start, end]) => {
         drawConnector3D(parseInt(start), parseInt(end), 0xf43f5e, 0.18);
       });
 
-      // Buat Bidak 4 Pemain
       const pawnGeo = new THREE.ConeGeometry(0.28, 0.8, 16);
       activePlayers.forEach((p, idx) => {
         const pawnMat = new THREE.MeshLambertMaterial({ color: p.color.three });
@@ -331,7 +350,7 @@
       });
 
       window.addEventListener('resize', () => {
-        if (!container.clientWidth) return;
+        if (!container.clientWidth || !container.clientHeight) return;
         camera.aspect = container.clientWidth / container.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(container.clientWidth, container.clientHeight);
@@ -344,11 +363,8 @@
       const idx = num - 1;
       const row = Math.floor(idx / 10);
       let col = idx % 10;
-      if (row % 2 === 1) col = 9 - col; // Zig-zag ular tangga
-      return {
-        x: col - 4.5,
-        z: 4.5 - row
-      };
+      if (row % 2 === 1) col = 9 - col;
+      return { x: col - 4.5, z: 4.5 - row };
     }
 
     function getPlayerOffset(playerIdx) {
@@ -386,17 +402,22 @@
     // 5. LOGIKA GAME & MULTI-TOUCH 4 PANEL
     // ==========================================
     function startGame() {
-      // Putar Audio
-      const audio = document.getElementById('bg-music');
-      audio.play().catch(e => console.log('Autoplay dicegah browser:', e));
+      if (!dbData.soal || dbData.soal.length === 0) {
+        alert('Sheet "Soal" masih kosong! Isi minimal 1 soal terlebih dahulu.');
+        return;
+      }
 
+      const audio = document.getElementById('bg-music');
+      audio.play().catch(e => console.log('Audio play:', e));
+
+      finishedCount = 0;
       document.getElementById('hud-kelas').innerText = `Kelas: ${currentKelas.replace('_', ' ')}`;
       showScreen('screen-game');
       init3D();
       renderPlayerPanels();
 
-      // Mulai Timer
       gameStartTime = Date.now();
+      clearInterval(timerInterval);
       timerInterval = setInterval(updateTimer, 1000);
     }
 
@@ -452,8 +473,7 @@
         const btn = document.createElement('button');
         btn.className = 'opt-btn';
         btn.innerText = `${optKey}. ${soalObj[optKey]}`;
-        
-        // Gunakan pointerdown agar multi-touch 4 jari merespons instan tanpa bentrok
+
         btn.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           handleAnswer(pIdx, optKey);
@@ -464,7 +484,6 @@
 
     async function handleAnswer(pIdx, selectedOpt) {
       const player = activePlayers[pIdx];
-      // Cegah double tap saat bidak sedang melompat atau sudah finish
       if (player.isMoving || player.finished) return;
 
       player.isMoving = true;
@@ -474,16 +493,13 @@
 
       if (isCorrect) player.score += 10;
 
-      // Tampilkan feedback singkat di panel pemain tersebut
       const overlay = document.getElementById(`p-overlay-${pIdx}`);
       overlay.style.display = 'flex';
       overlay.style.color = isCorrect ? '#4ade80' : '#f87171';
       overlay.innerText = isCorrect ? 'BENAR!\nMaju 6 Langkah' : 'SALAH!\nMaju 1 Langkah';
 
-      // Animasi melompat langkah demi langkah
       await movePlayerWithJump(pIdx, steps);
 
-      // Cek apakah menginjak Tangga atau Ular
       if (LADDERS[player.pos]) {
         overlay.style.color = '#38bdf8';
         overlay.innerText = 'NAIK TANGGA!';
@@ -496,29 +512,25 @@
 
       document.getElementById(`p-pos-${pIdx}`).innerText = `Petak: ${player.pos}`;
 
-      // Cek Finish (Petak 100)
       if (player.pos >= 100) {
         player.finished = true;
         player.finishTime = getFormattedTime();
         finishedCount++;
         overlay.style.color = '#facc15';
         overlay.innerText = `FINISH!\nJuara #${finishedCount}\nWaktu: ${player.finishTime}`;
-        
-        // Jika semua pemain selesai, akhiri game & simpan hasil
+
         if (finishedCount === activePlayers.length) {
           setTimeout(endGameAndSave, 1500);
         }
         return;
       }
 
-      // Lanjut ke soal berikutnya secara acak
       overlay.style.display = 'none';
       player.currentSoalIdx = (player.currentSoalIdx + 1 + Math.floor(Math.random() * 3)) % dbData.soal.length;
       loadQuestionForPlayer(pIdx);
       player.isMoving = false;
     }
 
-    // Animasi Lompat Per Petak
     function movePlayerWithJump(pIdx, steps) {
       return new Promise(async (resolve) => {
         const player = activePlayers[pIdx];
@@ -532,7 +544,6 @@
       });
     }
 
-    // Animasi Lompat Langsung (Ular / Tangga)
     function jumpToSpecificTile(pIdx, targetTile) {
       return new Promise(async (resolve) => {
         const player = activePlayers[pIdx];
@@ -560,13 +571,9 @@
           const elapsed = now - startTime;
           const t = Math.min(elapsed / duration, 1);
 
-          // Interpolasi posisi X dan Z
           player.mesh.position.x = startX + (endX - startX) * t;
           player.mesh.position.z = startZ + (endZ - startZ) * t;
-
-          // Kurva parabola untuk efek melompat (Y)
-          const jumpHeight = 1.2;
-          player.mesh.position.y = 0.5 + Math.sin(t * Math.PI) * jumpHeight;
+          player.mesh.position.y = 0.5 + Math.sin(t * Math.PI) * 1.2;
 
           if (t < 1) {
             requestAnimationFrame(step);
@@ -585,9 +592,8 @@
       document.getElementById('bg-music').pause();
       showScreen('screen-hasil');
 
-      // Urutkan berdasarkan waktu tercepat
       const sorted = [...activePlayers].sort((a, b) => a.finishTime.localeCompare(b.finishTime));
-      
+
       const tbody = document.getElementById('hasil-tbody');
       tbody.innerHTML = sorted.map((p, idx) => `
         <tr>
@@ -607,6 +613,7 @@
       try {
         await fetch(GAS_URL, {
           method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'saveResult', results: payload })
         });
         document.getElementById('save-status').innerText = 'Data nilai & timer berhasil tersimpan ke Google Sheets!';
