@@ -39,12 +39,19 @@
     /* Card UI */
     .card { background: #1e293b; padding: 26px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.45); width: 100%; max-width: 660px; text-align: center; border: 1px solid #334155; max-height: 88vh; overflow-y: auto; }
     h1, h2 { margin-bottom: 16px; color: #38bdf8; }
-    h3 { margin: 14px 0 8px; color: #facc15; font-size: 16px; }
     input { width: 100%; padding: 12px; margin-bottom: 14px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 16px; }
     button { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: transform 0.08s ease, background-color 0.12s ease; }
     button:hover { background: #0369a1; }
     button:active { transform: scale(0.94); }
     button:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; transform: none; }
+
+    .btn-reset-danger {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    .btn-reset-danger:hover {
+      background: #b91c1c;
+    }
 
     /* Grid Kelas */
     .kelas-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 12px; }
@@ -303,7 +310,7 @@
     table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; }
     th, td { padding: 8px; border-bottom: 1px solid #475569; text-align: center; font-size: 13px; }
     th { background: #0f172a; color: #38bdf8; }
-    .action-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+    .action-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -325,11 +332,15 @@
     </div>
   </div>
 
-  <!-- 2. HALAMAN PILIH KELAS -->
+  <!-- 2. HALAMAN PILIH KELAS (SETELAH LOGIN + TOMBOL RESET DATA HASIL) -->
   <div id="screen-kelas" class="screen">
     <div class="card">
       <h2>Pilih Kelas</h2>
       <div id="kelas-list" class="kelas-grid"></div>
+      <div class="action-row" style="margin-top: 18px; border-top: 1px solid #334155; padding-top: 14px;">
+        <button class="btn-reset-danger" onclick="resetHasilDatabase('kelas-reset-msg')">Reset Data Hasil (Nama, Nilai, Timer)</button>
+      </div>
+      <p id="kelas-reset-msg" style="font-size: 13px; color: #38bdf8; margin-top: 8px;"></p>
     </div>
   </div>
 
@@ -346,10 +357,12 @@
   <div id="screen-acak" class="screen">
     <div class="card">
       <h2>Pemain Terpilih (<span id="label-kelas"></span>)</h2>
+      <p id="acak-info-sisa" style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;"></p>
       <div id="selected-players" class="player-select-list"></div>
       <div class="action-row">
         <button style="background: #64748b;" onclick="acakUlangSemua()">Acak Ulang Semua</button>
         <button style="background: #16a34a;" onclick="startGame()">MULAI GAME</button>
+        <button style="background: #0d9488;" onclick="showScreen('screen-kelas')">Ganti Kelas</button>
       </div>
     </div>
   </div>
@@ -396,7 +409,7 @@
     </div>
   </div>
 
-  <!-- 7. HALAMAN TOP KELAS (AKUMULASI SEMUA SESI) -->
+  <!-- 7. HALAMAN TOP KELAS (AKUMULASI SEMUA SESI + CETAK JPG + RESET DATA HASIL) -->
   <div id="screen-top-kelas" class="screen">
     <div class="card">
       <h2>Top Kelas — Semua Sesi</h2>
@@ -413,8 +426,10 @@
         </thead>
         <tbody id="top-kelas-tbody"></tbody>
       </table>
+      <p id="top-reset-msg" style="font-size: 13px; color: #38bdf8; margin-top: 6px;"></p>
       <div class="action-row">
         <button style="background: #16a34a;" onclick="exportTopClassJPG()">Cetak JPG (Nama - Nilai - Timer)</button>
+        <button class="btn-reset-danger" onclick="resetHasilDatabase('top-reset-msg')">Reset Data Hasil</button>
         <button style="background: #0d9488;" onclick="showScreen('screen-kelas')">Pilih Kelas Lain</button>
         <button onclick="location.reload()">Kembali ke Login Guru</button>
       </div>
@@ -426,7 +441,7 @@
 
     const SESSION_SECONDS = 6 * 60; // 6 menit
     const COLS = 11; // 11 kolom ke samping kanan (1..11)
-    const ROWS = 5;  // 5 barisan ke atas (1..5 dari bawah ke atas)
+    const ROWS = 5;  // 5 barisan dari START ke atas (1..5)
     const TOTAL_TILES = COLS * ROWS; // 55 petak
 
     function barisanKolomToTile(barisanFromBottom, kolomFromLeft) {
@@ -437,6 +452,7 @@
       return rIdx * COLS + posInRow + 1;
     }
 
+    // Tangga tegak lurus
     const LADDERS = [
       { fromRow: 1, fromCol: 9, toRow: 2, toCol: 9, from: barisanKolomToTile(1, 9), to: barisanKolomToTile(2, 9) },
       { fromRow: 2, fromCol: 4, toRow: 3, toCol: 4, from: barisanKolomToTile(2, 4), to: barisanKolomToTile(3, 4) },
@@ -444,10 +460,14 @@
       { fromRow: 4, fromCol: 2, toRow: 5, toCol: 2, from: barisanKolomToTile(4, 2), to: barisanKolomToTile(5, 2) }
     ];
 
+    // Ular 2D (kepala tetap di atas, ekor sesuai posisi terbaru):
+    // - Ular hijau: kepala barisan 3 kolom 9, ekor barisan 1 kolom 6
+    // - Ular orange: kepala barisan 4 kolom 4, ekor dipindah ke barisan 2 kolom 2
+    // - Ular ungu: kepala barisan 5 kolom 10, ekor dipindah ke barisan 2 kolom 11
     const SNAKES = [
-      { headRow: 3, headCol: 9, tailRow: 1, tailCol: 6, head: barisanKolomToTile(3, 9), tail: barisanKolomToTile(1, 6), style: 'green-cartoon' },
-      { headRow: 4, headCol: 4, tailRow: 2, tailCol: 8, head: barisanKolomToTile(4, 4), tail: barisanKolomToTile(2, 8), style: 'orange-cartoon' },
-      { headRow: 5, headCol: 10, tailRow: 2, tailCol: 7, head: barisanKolomToTile(5, 10), tail: barisanKolomToTile(2, 7), style: 'purple-cartoon' }
+      { headRow: 3, headCol: 9,  tailRow: 1, tailCol: 6,  head: barisanKolomToTile(3, 9),  tail: barisanKolomToTile(1, 6),  style: 'green-cartoon' },
+      { headRow: 4, headCol: 4,  tailRow: 2, tailCol: 2,  head: barisanKolomToTile(4, 4),  tail: barisanKolomToTile(2, 2),  style: 'orange-cartoon' },
+      { headRow: 5, headCol: 10, tailRow: 2, tailCol: 11, head: barisanKolomToTile(5, 10), tail: barisanKolomToTile(2, 11), style: 'purple-cartoon' }
     ];
 
     const PLAYER_COLORS = [
@@ -457,7 +477,8 @@
       { hex: '#eab308', three: 0xeab308, label: '4' }
     ];
 
-    let dbData = { kelas: {}, catatan: [], soal: [] };
+    let dbData = { kelas: {}, catatan: [], soal: [], hasilNames: [] };
+    let playedStudentSet = new Set(); // Menyimpan nama siswa yang sudah ada di sheet Hasil
     let currentKelas = '';
     let sessionNumber = 1;
     let availableStudents = [];
@@ -467,6 +488,17 @@
     let remainingSeconds = SESSION_SECONDS;
     let timerInterval = null;
     let gameEnded = false;
+
+    function normalizeNameKey(raw) {
+      return String(raw || '')
+        .replace(/\s*\([^)]*\)\s*$/, '')
+        .trim()
+        .toUpperCase();
+    }
+
+    function syncPlayedNamesFromArray(list) {
+      playedStudentSet = new Set((list || []).map(n => normalizeNameKey(n)).filter(Boolean));
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       const userInput = document.getElementById('login-user');
@@ -546,6 +578,7 @@
 
           if (dataJson.status === 'success') {
             dbData = dataJson;
+            syncPlayedNamesFromArray(dataJson.hasilNames || []);
             renderKelasButtons();
             showScreen('screen-kelas');
           } else {
@@ -560,6 +593,45 @@
         msg.style.color = '#f43f5e';
         msg.innerText = 'Error: ' + err.message;
         btn.disabled = false;
+      }
+    }
+
+    // RESET DATA SHEET "Hasil" (Nama, Nilai, Timer)
+    async function resetHasilDatabase(statusElementId) {
+      const konfirmasi = confirm('Yakin ingin menghapus semua data Nama, Nilai, dan Timer di sheet "Hasil"?');
+      if (!konfirmasi) return;
+
+      const statusEl = document.getElementById(statusElementId);
+      if (statusEl) {
+        statusEl.style.color = '#38bdf8';
+        statusEl.innerText = 'Menghapus data di sheet Hasil...';
+      }
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'resetHasil' })
+        });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          playedStudentSet.clear();
+          dbData.hasilNames = [];
+          allSessionRecords = [];
+          latestTopClassRanking = [];
+          if (statusEl) {
+            statusEl.style.color = '#4ade80';
+            statusEl.innerText = 'Data sheet Hasil berhasil direset! Semua nama siswa kembali tersedia di list acak.';
+          }
+        } else {
+          throw new Error(json.message || 'Gagal mereset sheet Hasil');
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.style.color = '#f87171';
+          statusEl.innerText = 'Gagal reset: ' + err.message;
+        }
       }
     }
 
@@ -584,7 +656,6 @@
     function selectKelas(kls) {
       currentKelas = kls;
       sessionNumber = 1;
-      availableStudents = [...(dbData.kelas[kls] || [])];
 
       const catBox = document.getElementById('catatan-content');
       if (dbData.catatan && dbData.catatan.length > 0) {
@@ -595,7 +666,7 @@
       showScreen('screen-catatan');
     }
 
-    // 3. ACAK 4 NAMA + TOMBOL SKIP
+    // 3. ACAK 4 NAMA (HANYA SISWA YANG BELUM ADA DI SHEET "Hasil")
     function goToAcak() {
       document.getElementById('label-kelas').innerText = currentKelas.replace('_', ' ');
       acakUlangSemua();
@@ -603,12 +674,27 @@
     }
 
     function acakUlangSemua() {
-      let pool = [...(dbData.kelas[currentKelas] || [])];
-      pool.sort(() => Math.random() - 0.5);
+      const allInClass = [...(dbData.kelas[currentKelas] || [])];
+      // Saring: siswa yang sudah ada di sheet Hasil tidak masuk ke list acak
+      const eligiblePool = allInClass.filter(name => !playedStudentSet.has(normalizeNameKey(name)));
+      eligiblePool.sort(() => Math.random() - 0.5);
+
+      const infoEl = document.getElementById('acak-info-sisa');
+      if (eligiblePool.length === 0) {
+        infoEl.style.color = '#fb7185';
+        infoEl.innerText = 'Semua siswa di kelas ini sudah bermain (sudah tercatat di sheet Hasil). Klik Reset Data Hasil jika ingin mengulang.';
+        activePlayers = [];
+        availableStudents = [];
+        renderSelectedPlayers();
+        return;
+      } else {
+        infoEl.style.color = '#94a3b8';
+        infoEl.innerText = `Siswa belum bermain di kelas ini: ${eligiblePool.length} dari ${allInClass.length} siswa.`;
+      }
 
       const soalLen = (dbData.soal && dbData.soal.length > 0) ? dbData.soal.length : 1;
 
-      activePlayers = pool.slice(0, 4).map((name, idx) => ({
+      activePlayers = eligiblePool.slice(0, 4).map((name, idx) => ({
         id: idx,
         name: name,
         color: PLAYER_COLORS[idx],
@@ -625,13 +711,13 @@
         normY: 0,
         jumpLift: 0
       }));
-      availableStudents = pool.slice(4);
+      availableStudents = eligiblePool.slice(4);
       renderSelectedPlayers();
     }
 
     function skipPlayer(index) {
       if (availableStudents.length === 0) {
-        alert('Cadangan siswa di kelas ini sudah habis!');
+        alert('Cadangan siswa yang belum bermain di kelas ini sudah habis!');
         return;
       }
       const nextStudent = availableStudents.shift();
@@ -642,6 +728,10 @@
     function renderSelectedPlayers() {
       const list = document.getElementById('selected-players');
       list.innerHTML = '';
+      if (activePlayers.length === 0) {
+        list.innerHTML = '<p style="color:#f87171; font-size:14px;">Tidak ada siswa tersisa di daftar acak.</p>';
+        return;
+      }
       activePlayers.forEach((p, idx) => {
         const div = document.createElement('div');
         div.className = 'player-item';
@@ -655,7 +745,7 @@
     }
 
     // ==========================================
-    // 4. PAPAN 11x5 + TANGGA TEGAK + ULAR 2D + PION CATUR 3D + LABEL NAMA KECIL
+    // 4. PAPAN 11x5 + TANGGA TEGAK + ULAR 2D + PION CATUR 3D + LABEL NAMA
     // ==========================================
     let canvas, ctx;
     let scene3D, camera3D, renderer3D, pawnMeshes3D = [], pawnTagEls = [];
@@ -842,7 +932,6 @@
           mesh.position.x = worldX;
           mesh.position.y = worldY;
 
-          // Posisi label nama kecil tepat di atas kepala pion
           const tag = pawnTagEls[idx];
           if (tag) {
             const px = ((p.normX + 1) / 2) * w;
@@ -985,6 +1074,10 @@
     // 5. LOGIKA GAME & TIMER 6 MENIT
     // ==========================================
     function startGame() {
+      if (activePlayers.length === 0) {
+        alert('Tidak ada pemain terpilih! Reset data hasil atau pilih kelas lain.');
+        return;
+      }
       if (!dbData.soal || dbData.soal.length === 0) {
         alert('Sheet "Soal" masih kosong! Isi minimal 1 soal terlebih dahulu.');
         return;
@@ -1251,6 +1344,9 @@
 
       const sessionRows = activePlayers.map(p => {
         const secUsed = p.finishSec !== null ? p.finishSec : elapsedNow;
+        // Tandai siswa ini sudah bermain agar tidak muncul lagi di list acak berikutnya
+        playedStudentSet.add(normalizeNameKey(p.name));
+
         return {
           kelas: currentKelas,
           sesi: sessionNumber,
@@ -1287,18 +1383,20 @@
       showScreen('screen-sesi-hasil');
 
       const payload = sortedSession.map(r => ({
-        nama: `${r.name} (${r.kelas} Sesi ${r.sesi})`,
+        nama: r.name,
         nilai: r.score,
         timer: r.timeFormatted
       }));
 
       try {
-        await fetch(GAS_URL, {
+        const res = await fetch(GAS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'saveResult', results: payload })
         });
-        document.getElementById('save-status').innerText = 'Hasil sesi tersimpan ke Google Sheets.';
+        const json = await res.json();
+        if (json.hasilNames) syncPlayedNamesFromArray(json.hasilNames);
+        document.getElementById('save-status').innerText = 'Hasil sesi tersimpan ke Google Sheets (sheet Hasil).';
       } catch (e) {
         document.getElementById('save-status').innerText = 'Gagal menyimpan hasil sesi ke Google Sheets.';
       }
@@ -1310,6 +1408,7 @@
     }
 
     function showTopClassScreen() {
+      document.getElementById('top-reset-msg').innerText = '';
       const mapStudent = new Map();
 
       allSessionRecords.forEach(rec => {
