@@ -331,8 +331,9 @@
   <!-- Tombol Full Layar / Normal Satu Posisi di Semua Halaman -->
   <button id="btn-fullscreen-toggle" onclick="toggleFullScreen()">Full Layar</button>
 
-  <!-- Audio Backsound -->
+  <!-- Audio Backsound & Sound Selesai Sesi (yey.mp3 tanpa loop) -->
   <audio id="bg-music" src="sound.mp3" loop preload="auto"></audio>
+  <audio id="yey-sound" src="yey.mp3" preload="auto"></audio>
 
   <!-- 1. HALAMAN LOGIN GURU (TANPA TOMBOL KEMBALI) -->
   <div id="screen-login" class="screen active">
@@ -502,6 +503,14 @@
     let timerInterval = null;
     let gameEnded = false;
 
+    function playYeyOnce() {
+      const yeyAudio = document.getElementById('yey-sound');
+      if (!yeyAudio) return;
+      yeyAudio.loop = false;
+      yeyAudio.currentTime = 0;
+      yeyAudio.play().catch(e => console.log('Yey audio play:', e));
+    }
+
     function normalizeNameKey(raw) {
       return String(raw || '')
         .replace(/\s*\([^)]*\)\s*$/, '')
@@ -531,7 +540,6 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // Navigasi tombol Kembali ke halaman sebelumnya
     function goBackFrom(currentScreenId) {
       if (currentScreenId === 'screen-game') {
         clearInterval(timerInterval);
@@ -1420,6 +1428,7 @@
       `).join('');
 
       showScreen('screen-sesi-hasil');
+      playYeyOnce();
 
       const payload = sortedSession.map(r => ({
         nama: r.name,
