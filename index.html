@@ -433,7 +433,7 @@
   <div id="screen-top-kelas" class="screen">
     <div class="card">
       <h2>Top Kelas — Semua Sesi</h2>
-      <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px;">Diurutkan dari nilai tertinggi & langkah terjauh, lalu waktu paling sedikit.</p>
+      <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px;">Pemain FINISH diprioritaskan di peringkat atas, lalu nilai tertinggi, petak terjauh & waktu tersingkat.</p>
       <table>
         <thead>
           <tr>
@@ -1399,13 +1399,16 @@
           sesi: sessionNumber,
           name: p.name,
           pos: p.pos,
+          finished: Boolean(p.finished),
           score: p.score,
           timeSec: secUsed,
           timeFormatted: p.finishFormatted || formatSeconds(secUsed)
         };
       });
 
+      // Pemain FINISH selalu di peringkat teratas, lalu nilai tertinggi, petak terjauh, waktu tersingkat
       const sortedSession = [...sessionRows].sort((a, b) => {
+        if (a.finished !== b.finished) return a.finished ? -1 : 1;
         if (b.score !== a.score) return b.score - a.score;
         if (b.pos !== a.pos) return b.pos - a.pos;
         return a.timeSec - b.timeSec;
@@ -1420,7 +1423,7 @@
       sesiTbody.innerHTML = sortedSession.map((r, i) => `
         <tr>
           <td>#${i + 1}</td>
-          <td>${r.name}</td>
+          <td>${r.name}${r.finished ? ' <span style="color:#4ade80;font-weight:800;">(FINISH)</span>' : ''}</td>
           <td>${r.pos}</td>
           <td><strong>${r.score}</strong></td>
           <td>${r.timeFormatted}</td>
@@ -1466,18 +1469,21 @@
             kelas: rec.kelas,
             name: rec.name,
             bestPos: rec.pos,
+            hasFinished: Boolean(rec.finished),
             totalScore: rec.score,
             minTimeSec: rec.timeSec
           });
         } else {
           const cur = mapStudent.get(key);
           cur.totalScore += rec.score;
+          if (rec.finished) cur.hasFinished = true;
           if (rec.pos > cur.bestPos) cur.bestPos = rec.pos;
           if (rec.timeSec < cur.minTimeSec) cur.minTimeSec = rec.timeSec;
         }
       });
 
       latestTopClassRanking = Array.from(mapStudent.values()).sort((a, b) => {
+        if (a.hasFinished !== b.hasFinished) return a.hasFinished ? -1 : 1;
         if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
         if (b.bestPos !== a.bestPos) return b.bestPos - a.bestPos;
         return a.minTimeSec - b.minTimeSec;
@@ -1487,7 +1493,7 @@
       tbody.innerHTML = latestTopClassRanking.map((item, idx) => `
         <tr>
           <td>#${idx + 1}</td>
-          <td>${item.name} (${item.kelas.replace('_', ' ')})</td>
+          <td>${item.name} (${item.kelas.replace('_', ' ')})${item.hasFinished ? ' <span style="color:#4ade80;font-weight:800;">(FINISH)</span>' : ''}</td>
           <td>${item.bestPos}</td>
           <td><strong>${item.totalScore}</strong></td>
           <td>${formatSeconds(item.minTimeSec)}</td>
